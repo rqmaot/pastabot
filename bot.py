@@ -2,6 +2,7 @@ import json
 import discord
 from discord.ext import commands
 from db import db
+import misc
 
 def get_token():
     with open("config.json") as config_file:
@@ -78,5 +79,11 @@ async def name(ctx, name):
     players = db.query_name(name)
     res = db.player_list_to_string(players)
     await player_res(ctx, players)
+
+@bot.command()
+async def mp3(ctx, link):
+    filepath = misc.get_mp3(link)
+    await ctx.send(file=discord.File(filepath))
+    misc.rm(filepath)
 
 bot.run(TOKEN)
