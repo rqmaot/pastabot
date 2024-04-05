@@ -83,7 +83,13 @@ async def name(ctx, name):
 @bot.command()
 async def mp3(ctx, link):
     filepath = misc.get_mp3(link)
+    if filepath == None:
+        await ctx.send("Invalid link")
     await ctx.send(file=discord.File(filepath))
     misc.rm(filepath)
+
+@bot.command()
+async def test(ctx, arg):
+    print(arg)
 
 bot.run(TOKEN)
