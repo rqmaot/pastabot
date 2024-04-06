@@ -111,5 +111,6 @@ async def help(ctx):
     msg += "- `!list PASTE_LIST_OUTPUT` : paste the output of the list command to query every player in a lobby\n"
     msg += "- `!mp3 LINK_HERE` : get an mp3 from a youtube video\n"
     msg += "- `!help` : display this message\n"
+    await ctx.send(msg)
 
 bot.run(TOKEN)
