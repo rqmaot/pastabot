@@ -1,6 +1,7 @@
 import json
 
 class database:
+    horizontal_line = "--------------------------------------\n"
     def load(self):
         with open("config.json") as config_file:
             config = json.loads(config_file.read())
@@ -44,7 +45,7 @@ class database:
                     break
         return players
     def player_string(self, player):
-        pstr = "--------------------------------------\n"
+        pstr = self.horizontal_line
         pstr += f'{player["NAME"][-1]}   [{player["ID"]}]\n'
         for i in range(len(player["NAME"])):
             pstr += player["NAME"][i]
