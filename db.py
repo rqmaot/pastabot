@@ -58,7 +58,54 @@ class database:
         for player in player_list:
             pstr += self.player_string(player) + "\n"
         return pstr
-
+    def _parse_list_line(self, line):
+        i = line.find('"')
+        line = line[i + 1:]
+        i = line.find('"')
+        name = line[0:i]
+        line = line[i+1:]
+        i = line.find('[')
+        line = line[i+1:]
+        i = line.find(']')
+        player_id = line[0:i]
+        return (name, player_id)
+    def parse_list(self, liststr):
+        lines = liststr.split('\n')
+        res = []
+        for line in lines:
+            name, player_id = self._parse_list_line(line)
+            query = self.query_id(player_id)
+            res.append((name, player_id, query))
+        return res
+    def list_messages(self, list_response):
+        messages = []
+        cur = ""
+        for (name, player_id, query) in list_response:
+            next_line = f"{self.horizontal_line}- {name} ({player_id})\n"
+            if len(cur) + len(next_line) >= 1500:
+                messages.append(cur)
+                cur = ""
+            cur += next_line
+            player_names = "No data" if query == [] else self.player_string(query[0]).split('\n')[2]
+            if len(cur) + len(player_names) >= 1500:
+                messages.append(cur)
+                cur = ""
+            if len(player_names) >= 1500:
+                individual_names = player_names.split(', ')
+                for player_name in individual_names:
+                    if len(cur) + 2 + player_name >= 1500:
+                        messages.append(cur)
+                        cur = ""
+                    cur += player_name if cur == "" else f", {player_name}"
+                if cur != "":
+                    messages.append(cur)
+                    cur = ""
+            else:
+                cur += player_names
+            cur += "\n"
+        if cur != "":
+            messages.append(cur)
+        return messages
 
 
 db = database()
