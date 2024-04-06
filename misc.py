@@ -23,7 +23,8 @@ def _new_extension(filename, new_extension):
 def _ytdlp(link):
     ydl_opts = {
         'format': "139",
-        'quiet': 'true'
+        'quiet': True,
+        'restrictfilenames': True
     }
     ydl = yt_dlp.YoutubeDL(ydl_opts)
     info = ydl.extract_info(link)
@@ -32,17 +33,21 @@ def _ytdlp(link):
 def get_mp3(link):
     if not _check_url(link):
         return None
+    original_files = os.listdir(os.getcwd())
     name = _ytdlp(link)
-    filename_escaped = name.replace(" ", "\\ ")
+    filename = ""
+    for file in os.listdir(os.getcwd()):
+        if file not in original_files:
+            filename = file
+            break
     mp3 = name + ".mp3"
-    mp3_escaped = mp3.replace(" ", "\\ ")
+    mp3_escaped = mp3.replace("'", "\\'").replace('/', ' ⁄')
     #os.system(f"yt-dlp -x {link} -o ytdlp > /dev/null")
-    os.system(f"ffmpeg -nostdin -i {filename_escaped}* {mp3_escaped} 2> /dev/null")
-    os.system(f"rm {filename_escaped}*m4a")
-    return "./" + mp3
+    os.system(f"ffmpeg -nostdin -i {filename} '{mp3_escaped}' 2> /dev/null")
+    os.remove(filename)
+    return "./" + mp3.replace('/', ' ⁄')
 
 def rm(file):
-    file = file.replace(" ", "\\ ")
     print(f"removing {file}")
-    os.system(f"rm {file}") 
+    os.remove(file)
 
