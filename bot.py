@@ -14,7 +14,7 @@ TOKEN = get_token()
 intents = discord.Intents.default()
 intents.message_content = True
 
-bot = commands.Bot(command_prefix='!', intents=intents)
+bot = commands.Bot(command_prefix='!', intents=intents, help_command=None)
 
 async def player_res(ctx, player_list):
     if len(player_list) == 0:
@@ -81,15 +81,35 @@ async def name(ctx, name):
     await player_res(ctx, players)
 
 @bot.command()
+async def list(ctx, *, args):
+    liststr = ""
+    for arg in args:
+        liststr += f"{arg}"
+    list_response = db.parse_list(liststr)
+    messages = db.list_messages(list_response)
+    for msg in messages:
+        await ctx.send(msg)
+
+@bot.command()
 async def mp3(ctx, link):
     filepath = misc.get_mp3(link)
     if filepath == None:
         await ctx.send("Invalid link")
     await ctx.send(file=discord.File(filepath))
+    try:
+        await ctx.message.delete()
+    except Exception as e:
+        print(e)
     misc.rm(filepath)
 
 @bot.command()
-async def test(ctx, arg):
-    print(arg)
+async def help(ctx):
+    msg = "Available commands: !id, !name, !ping, !list, !mp3, !help\n"
+    msg += "- `!id ID_HERE` : search a player by their id (you can find it by running list in the raot console)\n"
+    msg += "- `!name NAME_HERE` : search a player by their name. case insensitive\n"
+    msg += "- `!ping` : responds with \"pong!\", useful for checking if the bot is online\n"
+    msg += "- `!list PASTE_LIST_OUTPUT` : paste the output of the list command to query every player in a lobby\n"
+    msg += "- `!mp3 LINK_HERE` : get an mp3 from a youtube video\n"
+    msg += "- `!help` : display this message\n"
 
 bot.run(TOKEN)
