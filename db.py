@@ -20,6 +20,22 @@ class database:
         if player_id in self.db:
             return self.db[player_id]
         return None
+    def put(self, player_id, name, discord_id):
+        if player_id in self.db:
+            if name in self.db[player_id]["NAME"]:
+                i = self.db[player_id]["NAME"].index(name)
+                del self.db[player_id]["NAME"][i]
+            self.db[player_id]["NAME"].append(name)
+            if isinstance(self.db[player_id]["Discord_ID"], str):
+                self.db[player_id]["Discord_ID"] = [self.db[player_id]["Discord_ID"]]
+            if discord_id not in self.db[player_id]["Discord_ID"]:
+                self.db[player_id]["Discord_ID"].append(discord_id)
+        else:
+            self.db[player_id] = {
+                "ID": player_id,
+                "NAME": [name],
+                "Discord_ID": [discord_id]
+            }
     def player_id(self, player):
         return player["ID"]
     def player_names(self, player):
@@ -69,19 +85,32 @@ class database:
         line = line[i+1:]
         i = line.find(']')
         player_id = line[0:i]
-        return (name, player_id)
+        if player_id == "YOU":
+            line = line[i+1:]
+            i = line.find('[')
+            line = line[i+1:]
+            i = line.find(']')
+            player_id = line[0:i]
+        line = line[i+1:]
+        i = line.find('[')
+        line = line[i+1:]
+        i = line.find(']')
+        discord_id = line[0:i]
+        return (name, player_id, discord_id)
     def parse_list(self, liststr):
         lines = liststr.split('\n')
         res = []
         for line in lines:
-            name, player_id = self._parse_list_line(line)
+            name, player_id, discord_id = self._parse_list_line(line)
+            self.put(player_id, name, discord_id)
             query = self.query_id(player_id)
-            res.append((name, player_id, query))
+            res.append((name, player_id, discord_id, query))
+        self.save()
         return res
     def list_messages(self, list_response):
         messages = []
         cur = ""
-        for (name, player_id, query) in list_response:
+        for (name, player_id, discord, query) in list_response:
             next_line = f"{self.horizontal_line}- {name} ({player_id})\n"
             if len(cur) + len(next_line) >= 1500:
                 messages.append(cur)
