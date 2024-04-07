@@ -86,6 +86,13 @@ async def list(ctx, *, args):
     for arg in args:
         liststr += f"{arg}"
     list_response = db.parse_list(liststr)
+    for i in range(len(list_response)):
+        (name, uuid, discord_id, query) = list_response[i]
+        try:
+            user = await bot.fetch_user(int(discord_id))
+        except:
+            user = {"id": discord_id}
+        list_response[i] = (name, uuid, user, query)
     messages = db.list_messages(list_response)
     for msg in messages:
         await ctx.send(msg)
@@ -101,6 +108,25 @@ async def mp3(ctx, link):
     except Exception as e:
         print(e)
     misc.rm(filepath)
+
+@bot.command()
+async def dm(ctx, user_id, *, args):
+    if ctx.author.id != 1003070068206354473:
+        await ctx.send("you are not authorized to use this command")
+        return
+    msg = ""
+    for word in args:
+        msg += word
+    user = await bot.fetch_user(int(user_id))
+    channel = user.dm_channel
+    if channel == None:
+        channel = await bot.create_dm(user)
+    await channel.send(msg)
+
+@bot.command()
+async def find(ctx, discord_id):
+    user = await bot.fetch_user(int(discord_id))
+    await ctx.send(str(user))
 
 @bot.command()
 async def help(ctx):
