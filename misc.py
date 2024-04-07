@@ -9,6 +9,8 @@ import yt_dlp
 def _check_url(url):
     if validators.url(url):
         return True
+    if validators.url("http://" + url):
+        return True
     return False
 
 def _new_extension(filename, new_extension):
