@@ -129,6 +129,10 @@ async def find(ctx, discord_id):
     await ctx.send(str(user))
 
 @bot.command()
+async def whoami(ctx):
+    await ctx.send(ctx.author.id)
+
+@bot.command()
 async def help(ctx):
     msg = "Available commands: !id, !name, !ping, !list, !mp3, !help\n"
     msg += "- `!id ID_HERE` : search a player by their id (you can find it by running list in the raot console)\n"
