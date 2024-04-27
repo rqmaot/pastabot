@@ -112,12 +112,12 @@ async def mp3(ctx, link):
 @bot.command()
 async def dm(ctx, user_id, *, args):
     if ctx.author.id != 1003070068206354473:
-        await ctx.send("you are not authorized to use this command")
         return
     msg = ""
     for word in args:
         msg += word
     user = await bot.fetch_user(int(user_id))
+    #printf(f"sending \"{msg}\" to {user}")
     channel = user.dm_channel
     if channel == None:
         channel = await bot.create_dm(user)
@@ -142,5 +142,28 @@ async def help(ctx):
     msg += "- `!mp3 LINK_HERE` : get an mp3 from a youtube video\n"
     msg += "- `!help` : display this message\n"
     await ctx.send(msg)
+
+@bot.command()
+async def deleteThatShit(ctx, msg_id):
+    if ctx.author.id != 1003070068206354473:
+        return
+    msg = await ctx.fetch_message(int(msg_id))
+    await msg.delete()
+    await ctx.send("deleted that shit")
+
+@bot.command()
+async def say(ctx, *, args):
+    if ctx.author.id != 1003070068206354473:
+        return
+    msg = ""
+    for arg in args:
+        msg += arg
+    await ctx.send(msg)
+
+#@bot.event
+#async def on_message(message):
+#    if message.author == bot.user or message.content.startswith(bot.command_prefix):
+#        return
+#    print(f"[{message.author}:{message.author.id}] {message.content}")
 
 bot.run(TOKEN)
