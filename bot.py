@@ -2,6 +2,7 @@ import json
 import discord
 from discord.ext import commands
 from db import db
+from auth import auth
 import misc
 
 def get_token():
@@ -111,7 +112,7 @@ async def mp3(ctx, link):
 
 @bot.command()
 async def dm(ctx, user_id, *, args):
-    if ctx.author.id != 1003070068206354473:
+    if auth.check(ctx.author.id) < auth.ADMIN:
         return
     msg = ""
     for word in args:
@@ -145,15 +146,39 @@ async def help(ctx):
 
 @bot.command()
 async def deleteThatShit(ctx, msg_id):
-    if ctx.author.id != 1003070068206354473:
+    if auth.check(ctx.author.id) < auth.MODERATOR:
         return
-    msg = await ctx.fetch_message(int(msg_id))
-    await msg.delete()
-    await ctx.send("deleted that shit")
+    msg = await ctx.fetch_message(msg_id)
+    try:
+        await ctx.message.delete()
+        await msg.delete()
+        await ctx.send("deleted that shit")
+    except Exception as e:
+        print(e)
+        await ctx.send("i can't delete that shit")
+
+@bot.command()
+async def deleteAllThatShit(ctx, *, args):
+    if auth.check(ctx.author.id) < auth.MODERATOR:
+        return
+    for msgid in args:
+        msg = await ctx.fetch_message(msgid)
+        if msg == None:
+            continue
+        try:
+            await msg.delete()
+        except:
+            pass
+    try:
+        await ctx.message.delete()
+        await ctx.send("deleted all that shit")
+    except Exception as e:
+        print(e)
+        await ctx.send("couldn't delete that shit")
 
 @bot.command()
 async def say(ctx, *, args):
-    if ctx.author.id != 1003070068206354473:
+    if auth.check(ctx.author.id) < auth.ADMIN:
         return
     msg = ""
     for arg in args:
