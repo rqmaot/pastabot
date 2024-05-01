@@ -253,4 +253,13 @@ async def leave_voice(ctx):
 #        return
 #    print(f"[{message.author}:{message.author.id}] {message.content}")
 
-bot.run(TOKEN)
+class App:
+    def __init__(self):
+        self.bot = bot
+    def run(self):
+        self.bot.run(TOKEN)
+
+app = App()
+
+if __name__ == "__main__":
+    bot.run(TOKEN)

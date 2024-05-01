@@ -53,12 +53,29 @@ def rm(file):
     os.remove(file)
 
 def get_sound(sound):
+    config = None
     try:
         with open("config.json") as config_file:
             config = json.loads(config_file.read())
-            with open(config["sounds"]) as sounds_file:
-                sounds = json.loads(sounds_file.read())
-                return sounds["prefix"] + "/" + sounds["sounds"][sound]
-    except Exception as e:
-        print(e)
+    except:
+        config = None
+    if config == None:
+        return None
+
+    sounds = None
+    try:
+        with open("sounds.json") as sounds_file:
+            sounds = json.loads(sounds_file.read())
+    except:
+        sounds = None
+    if sounds == None:
+        return None
+
+    try:
+        return sounds["prefix"] + "/" + sounds["prefix"][sound]
+    except:
+        files = os.listdir(sounds["prefix"])
+        for file in files:
+            if sound in file:
+                return sounds["prefix"] + "/" + file
         return None
