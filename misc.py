@@ -1,3 +1,4 @@
+import json
 import os
 import validators
 import yt_dlp
@@ -51,3 +52,13 @@ def rm(file):
     print(f"removing {file}")
     os.remove(file)
 
+def get_sound(sound):
+    try:
+        with open("config.json") as config_file:
+            config = json.loads(config_file.read())
+            with open(config["sounds"]) as sounds_file:
+                sounds = json.loads(sounds_file.read())
+                return sounds["prefix"] + "/" + sounds["sounds"][sound]
+    except Exception as e:
+        print(e)
+        return None

@@ -1,6 +1,8 @@
 import json
 import discord
 from discord.ext import commands
+import yt_dlp
+
 from db import db
 from auth import auth
 import misc
@@ -110,6 +112,58 @@ async def mp3(ctx, link):
         print(e)
     misc.rm(filepath)
 
+async def _connect(ctx):
+    vc = ctx.voice_client
+    if vc == None:
+        try:
+            vc = await ctx.author.voice.channel.connect()
+        except Exception as e:
+            return None
+    return vc
+
+@bot.command()
+async def play(ctx, yturl):
+    # if auth.check(ctx.author.id) < auth.TRUSTED:
+    #    return
+    vc = await _connect(ctx)
+    if vc == None:
+        await ctx.send("could not connect to voice")
+        return
+    # await ctx.send(f"client: {vc}")
+    try:
+        mp3 = misc.get_mp3(yturl)
+        vc.play(discord.FFmpegPCMAudio(mp3,
+            options='-filter:a loudnorm'), 
+            after = lambda e : misc.rm(mp3))
+    except Exception as e:
+        await ctx.send(f"Encountered error: {e}")
+
+@bot.command()
+async def sound(ctx, *, args):
+    sound = ""
+    for arg in args:
+        sound += arg
+    if auth.check(ctx.author.id) < auth.TRUSTED:
+        await ctx.send("you are not authorized to play sounds")
+        return
+    vc = await _connect(ctx)
+    if vc == None:
+        await ctx.send("could not connect to voice")
+        return
+    try:
+        file = misc.get_sound(sound)
+        if file == None:
+            await ctx.send("no such sound")
+            return
+        vc.play(discord.FFmpegPCMAudio(file, options='-filter:a loudnorm'))
+    except Exception as e:
+        await ctx.send(f"Encountered error: {e}")
+
+@bot.command()
+async def stop(ctx):
+    await leave_voice(ctx)
+    await join_voice(ctx)
+
 @bot.command()
 async def dm(ctx, user_id, *, args):
     if auth.check(ctx.author.id) < auth.ADMIN:
@@ -178,12 +232,20 @@ async def deleteAllThatShit(ctx, *, args):
 
 @bot.command()
 async def say(ctx, *, args):
-    if auth.check(ctx.author.id) < auth.ADMIN:
-        return
     msg = ""
     for arg in args:
         msg += arg
     await ctx.send(msg)
+
+@bot.command()
+async def join_voice(ctx):
+    print("join voice")
+    channel = ctx.author.voice.channel
+    await channel.connect()
+@bot.command()
+async def leave_voice(ctx):
+    print("leave voice")
+    await ctx.voice_client.disconnect()
 
 #@bot.event
 #async def on_message(message):
