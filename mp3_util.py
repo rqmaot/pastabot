@@ -14,7 +14,8 @@ def _ytdlp(link):
     options = {
         'format': '139',
         'quiet': True,
-        'restrictfilenames': True
+        'restrictfilenames': True,
+        'noplaylist': True
     }
     ydl = yt_dlp.YoutubeDL(options)
     info = ydl.extract_info(link)
