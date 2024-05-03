@@ -113,6 +113,7 @@ async def mp3(ctx, link):
         await ctx.message.delete()
     except Exception as e:
         print(e)
+    misc.rm(filepath)
     mp3_util.rmdir(mp3_dir)
 
 async def _connect(ctx):
