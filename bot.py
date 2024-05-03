@@ -6,6 +6,8 @@ import yt_dlp
 from db import db
 from auth import auth
 import misc
+import mp3_util
+import musicq
 
 def get_token():
     with open("config.json") as config_file:
@@ -102,15 +104,16 @@ async def list(ctx, *, args):
 
 @bot.command()
 async def mp3(ctx, link):
-    filepath = misc.get_mp3(link)
-    if filepath == None:
+    mp3_name, mp3_dir = mp3_util.get_mp3(link)
+    if mp3_name == None:
         await ctx.send("Invalid link")
+    filepath = f"./{mp3_dir}/{mp3_name}"
     await ctx.send(file=discord.File(filepath))
     try:
         await ctx.message.delete()
     except Exception as e:
         print(e)
-    misc.rm(filepath)
+    mp3_util.rmdir(mp3_dir)
 
 async def _connect(ctx):
     vc = ctx.voice_client
@@ -137,6 +140,21 @@ async def play(ctx, yturl):
             after = lambda e : misc.rm(mp3))
     except Exception as e:
         await ctx.send(f"Encountered error: {e}")
+
+@bot.command()
+async def add(ctx, url):
+    vc = await _connect(ctx)
+    try:
+        mp3 = misc.get_mp3(url)
+        sound = discord.FFmpegPCMAudio(mp3, options='-filter:a loudnorm')
+        musicq.add(sound, mp3, vc)
+    except Exception as e:
+        await ctx.send(f"Encountered error: {e}")
+
+@bot.command()
+async def clear(ctx):
+    musicq.clear()
+    await ctx.send("cleared the queue")
 
 @bot.command()
 async def sound(ctx, *, args):

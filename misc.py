@@ -52,30 +52,37 @@ def rm(file):
     print(f"removing {file}")
     os.remove(file)
 
-def get_sound(sound):
-    config = None
+def get_config():
     try:
         with open("config.json") as config_file:
-            config = json.loads(config_file.read())
+            return json.loads(config_file.read())
     except:
-        config = None
-    if config == None:
         return None
 
-    sounds = None
+def get_sounds_json(config):
     try:
-        with open("sounds.json") as sounds_file:
-            sounds = json.loads(sounds_file.read())
+        with open(config["sounds"]) as sounds_file:
+            return json.loads(sounds_file.read())
     except:
-        sounds = None
+        return None
+
+def get_sound(sound):
+    sounds = get_sounds_json(get_config())
     if sounds == None:
         return None
-
-    try:
-        return sounds["prefix"] + "/" + sounds["prefix"][sound]
-    except:
-        files = os.listdir(sounds["prefix"])
-        for file in files:
-            if sound in file:
-                return sounds["prefix"] + "/" + file
-        return None
+    # i know i should just check if the sound is in sounds['sounds'] and return sound['sounds'][sound]
+    # but python is stupid and gave a type error when the key had a space in it and i am not debugging that
+    # first check: there is a key for the sound given
+    for key in sounds['sounds']:
+        if key == sound:
+            return sounds["prefix"] + "/" + key
+    # second check: there is a key containing/contained in the sound given
+    for key in sounds['sounds']:
+        if sound in key or key in sound:
+            return sounds['prefix'] + '/' + key
+    # last check: a sound file contains the sound given
+    files = os.listdir(sounds["prefix"])
+    for file in files:
+        if sound in file:
+            return sounds["prefix"] + "/" + file
+    return None
