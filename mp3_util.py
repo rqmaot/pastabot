@@ -30,8 +30,8 @@ def get_mp3(link):
     title = _ytdlp(link)
     filename = os.listdir('./')[0]
     mp3 = title + '.mp3'
-    mp3_escaped = mp3.replace("'", "\\'").replace('/', ' ⁄')
-    os.system(f"ffmpeg -nostdin -i {filename} '{mp3_escaped}'")
+    mp3_escaped = mp3.replace('"', '\\"').replace('/', ' ⁄')
+    os.system(f"ffmpeg -nostdin -i {filename} \"{mp3_escaped}\"")
     os.remove(filename)
     os.chdir('../')
     return (mp3, mp3_dir)
