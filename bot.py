@@ -2,6 +2,7 @@ import json
 import discord
 from discord.ext import commands
 import yt_dlp
+import os
 
 from db import db
 from auth import auth
@@ -265,6 +266,36 @@ async def join_voice(ctx):
 async def leave_voice(ctx):
     print("leave voice")
     await ctx.voice_client.disconnect()
+
+def get_config():
+    try:
+        with open("config.json") as config_file:
+            return json.loads(config_file.read())
+    except:
+        return None
+
+def get_sounds_json(config):
+    try:
+        with open(config["sounds"]) as sounds_file:
+            return json.loads(sounds_file.read())
+    except:
+        return None
+
+@bot.command()
+async def list_sounds(ctx, files = None):
+    sounds = get_sounds_json(get_config())
+    if sounds = None:
+        await ctx.send("no sounds")
+        return
+    await ctx.sound("sounds:")
+    out = ""
+    if files == None:
+        for sound in sounds["sounds"]:
+            out += f"{sound}\n"
+    else:
+        for file in os.listdir(sounds["prefix"]):
+            out += f"{file}\n"
+    await ctx.send(out)
 
 #@bot.event
 #async def on_message(message):
