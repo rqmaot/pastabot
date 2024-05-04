@@ -73,9 +73,9 @@ def get_sound(sound):
     # i know i should just check if the sound is in sounds['sounds'] and return sound['sounds'][sound]
     # but python is stupid and gave a type error when the key had a space in it and i am not debugging that
     # first check: there is a key for the sound given
-    for key in sounds['sounds']:
+    for key, value in sounds['sounds'].items():
         if key == sound:
-            return sounds["prefix"] + "/" + key
+            return sounds["prefix"] + "/" + value
     # second check: there is a key containing/contained in the sound given
     for key in sounds['sounds']:
         if sound in key or key in sound:
