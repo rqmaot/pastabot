@@ -284,10 +284,10 @@ def get_sounds_json(config):
 @bot.command()
 async def list_sounds(ctx, files = None):
     sounds = get_sounds_json(get_config())
-    if sounds = None:
+    if sounds == None:
         await ctx.send("no sounds")
         return
-    await ctx.sound("sounds:")
+    await ctx.send("sounds:")
     out = ""
     if files == None:
         for sound in sounds["sounds"]:
