@@ -109,13 +109,19 @@ async def mp3(ctx, link):
     if mp3_name == None:
         await ctx.send("Invalid link")
     filepath = f"./{mp3_dir}/{mp3_name}"
-    await ctx.send(file=discord.File(filepath))
+    try:
+        await ctx.send(file=discord.File(filepath))
+    except Exception as e:
+        print(f"Error: {e}")
     try:
         await ctx.message.delete()
     except Exception as e:
-        print(e)
-    misc.rm(filepath)
-    mp3_util.rmdir(mp3_dir)
+        print(f"Error deleting message: {e}")
+    try:
+        misc.rm(filepath)
+        mp3_util.rmdir(mp3_dir)
+    except Exception as e: 
+        print(f"Error deleting: {e}")
 
 async def _connect(ctx):
     vc = ctx.voice_client
@@ -126,30 +132,14 @@ async def _connect(ctx):
             return None
     return vc
 
-@bot.command()
-async def play(ctx, yturl):
-    # if auth.check(ctx.author.id) < auth.TRUSTED:
-    #    return
-    vc = await _connect(ctx)
-    if vc == None:
-        await ctx.send("could not connect to voice")
-        return
-    # await ctx.send(f"client: {vc}")
-    try:
-        mp3 = misc.get_mp3(yturl)
-        vc.play(discord.FFmpegPCMAudio(mp3,
-            options='-filter:a loudnorm'), 
-            after = lambda e : misc.rm(mp3))
-    except Exception as e:
-        await ctx.send(f"Encountered error: {e}")
-
-@bot.command()
+@bot.command(aliases = ['play'])
 async def add(ctx, url):
     vc = await _connect(ctx)
     try:
-        mp3 = misc.get_mp3(url)
-        sound = discord.FFmpegPCMAudio(mp3, options='-filter:a loudnorm')
-        musicq.add(sound, mp3, vc)
+        mp3, mp3_dir = mp3_util.get_mp3(url)
+        filepath = f"./{mp3_dir}/{mp3}"
+        sound = discord.FFmpegPCMAudio(filepath, options='-filter:a loudnorm')
+        musicq.add(sound, mp3_dir, vc)
     except Exception as e:
         await ctx.send(f"Encountered error: {e}")
 

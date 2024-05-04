@@ -1,9 +1,10 @@
 import misc
+import os
 
 class QueueItem:
-    def __init__(self, sound, file_to_rm):
+    def __init__(self, sound, dir_to_rm):
         self.sound = sound
-        self.file_to_rm = file_to_rm
+        self.dir_to_rm = dir_to_rm
         self.playing = False
 
 class Queue:
@@ -20,6 +21,8 @@ class Queue:
             return None
         item = self.q[0]
         self.q = self.q[1:]
+        to_rm = item.dir_to_rm.replace('"', '\\"')
+        os.system(f"rm -r \"{to_rm}\"")
         return item
     def peek(self):
         if self.is_empty():
@@ -35,8 +38,8 @@ def clear():
         if not queue.peek().playing:
             queue.dequeue()
 
-def add(sound, file_to_rm, vc = None):
-    item = QueueItem(sound, file_to_rm)
+def add(sound, dir_to_rm, vc = None):
+    item = QueueItem(sound, dir_to_rm)
     queue.enqueue(item)
     if not queue.peek().playing:
         play_next(vc)
@@ -47,9 +50,6 @@ def play_next(vc):
     item = queue.peek()
     item.playing = True
     def after(x):
-        is_playing = False
-        if item.file_to_rm != None:
-            misc.rm(item.file_to_rm)
         queue.dequeue()
         if(len(queue.q) != 0):
             play_next(vc)
