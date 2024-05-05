@@ -149,6 +149,16 @@ async def clear(ctx):
     await ctx.send("cleared the queue")
 
 @bot.command()
+async def loop(ctx):
+    musicq.loop()
+    await ctx.send("looping queue")
+
+@bot.command()
+async def noloop(ctx):
+    musicq.no_loop()
+    await ctx.send("queue looping off")
+
+@bot.command()
 async def sound(ctx, *, args):
     sound = ""
     for arg in args:
