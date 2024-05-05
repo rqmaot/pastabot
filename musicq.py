@@ -10,11 +10,6 @@ class QueueItem:
 class Queue:
     def __init__(self):
         self.q = []
-        self.looping = False
-    def set_looping(self):
-        self.looping = True
-    def reset_looping(self):
-        self.looping = False
     def is_empty(self):
         return len(self.q) == 0
     def length(self):
@@ -26,11 +21,8 @@ class Queue:
             return None
         item = self.q[0]
         self.q = self.q[1:]
-        if self.looping:
-            self.enqueue(item)
-        else:
-            to_rm = item.dir_to_rm.replace('"', '\\"')
-            os.system(f"rm -r \"{to_rm}\"")
+        to_rm = item.dir_to_rm.replace('"', '\\"')
+        os.system(f"rm -r \"{to_rm}\"")
         return item
     def peek(self):
         if self.is_empty():
@@ -38,12 +30,6 @@ class Queue:
         return self.q[0]
 
 queue = Queue()
-
-def loop():
-    queue.set_looping()
-
-def no_loop():
-    queue.reset_looping()
 
 def clear():
     while queue.length() > 1:
