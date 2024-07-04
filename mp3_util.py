@@ -12,7 +12,6 @@ suffix = [0]
 
 def _ytdlp(link):
     options = {
-        'format': '139',
         'quiet': True,
         'restrictfilenames': True,
         'noplaylist': True
