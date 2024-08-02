@@ -3,6 +3,7 @@ import discord
 from discord.ext import commands
 import yt_dlp
 import os
+import subprocess
 
 from db import db
 from auth import auth
