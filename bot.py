@@ -215,6 +215,12 @@ async def ip(ctx):
     await ctx.send(f"The pastacraft server IP is {pasta_ip}") 
 
 @bot.command()
+async def status(ctx):
+    processes = str(subprocess.check_output(['ps', '-e']))
+    server_running = processes.find('java') != -1
+    await ctx.send(f"The minecraft server is {'online' if server_running else 'offline'}")
+
+@bot.command()
 async def startcraft(ctx):
     if auth.check(ctx.author.id) < auth.MODERATOR:
         return
