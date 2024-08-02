@@ -222,6 +222,13 @@ async def startcraft(ctx):
     await ctx.send("Starting pastacraft")
 
 @bot.command()
+async def stopcraft(ctx):
+    if auth.check(ctx.author.id) < auth.MODERATOR:
+        return
+    os.system("pkill java")
+    await ctx.send("Stopped pastacraft")
+
+@bot.command()
 async def deleteThatShit(ctx, msg_id):
     if auth.check(ctx.author.id) < auth.MODERATOR:
         return
