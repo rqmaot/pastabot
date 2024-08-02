@@ -209,6 +209,18 @@ async def help(ctx):
     await ctx.send(msg)
 
 @bot.command()
+async def ip(ctx):
+    pasta_ip = str(subprocess.check_output(['curl', 'ipinfo.io/ip']))[2:-1]
+    await ctx.send(f"The pastacraft server IP is {pasta_ip}") 
+
+@bot.command()
+async def startcraft(ctx):
+    if auth.check(ctx.author.id) < auth.MODERATOR:
+        return
+    os.system("sh /root/craft/run.sh")
+    await ctx.send("Starting pastacraft")
+
+@bot.command()
 async def deleteThatShit(ctx, msg_id):
     if auth.check(ctx.author.id) < auth.MODERATOR:
         return
@@ -220,6 +232,17 @@ async def deleteThatShit(ctx, msg_id):
     except Exception as e:
         print(e)
         await ctx.send("i can't delete that shit")
+
+@bot.command()
+async def deleteThatShitQuietly(ctx, msg_id):
+    if auth.check(ctx.author.id) < auth.MODERATOR:
+        return
+    msg = await ctx.fetch_message(msg_id)
+    try:
+        await ctx.message.delete()
+        await msg.delete()
+    except Exception as e:
+        print(e)
 
 @bot.command()
 async def deleteAllThatShit(ctx, *, args):
