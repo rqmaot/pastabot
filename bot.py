@@ -218,7 +218,7 @@ async def ip(ctx):
 async def startcraft(ctx):
     if auth.check(ctx.author.id) < auth.MODERATOR:
         return
-    os.system("sh /root/craft/run.sh")
+    os.system("cd /root/craft && sh run.sh")
     await ctx.send("Starting pastacraft")
 
 @bot.command()
