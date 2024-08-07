@@ -210,6 +210,17 @@ async def help(ctx):
     await ctx.send(msg)
 
 @bot.command()
+async def encrypt(ctx, key, *, args):
+    msg = "".join(args)
+    ct = cipher.encrypt(msg, key)
+    await ctx.send(ct)
+
+@bot.command()
+async def decrypt(ctx, key, ct):
+    pt = cipher.decrypt(ct, key)
+    await ctx.send(pt)
+
+@bot.command()
 async def ip(ctx):
     pasta_ip = str(subprocess.check_output(['curl', 'ipinfo.io/ip']))[2:-1]
     await ctx.send(f"The pastacraft server IP is {pasta_ip}") 
