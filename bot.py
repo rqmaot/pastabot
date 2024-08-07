@@ -10,6 +10,7 @@ from auth import auth
 import misc
 import mp3_util
 import musicq
+import cipher
 
 def get_token():
     with open("config.json") as config_file:
