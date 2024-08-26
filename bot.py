@@ -247,6 +247,13 @@ async def stopcraft(ctx):
     await ctx.send("Stopped pastacraft")
 
 @bot.command()
+async def craftcmd(ctx, *, args):
+    if auth.check(ctx.author.id) < auth.ADMIN:
+        return
+    cmd = "".join(args)
+    os.system(f"cd /root/craft && sh command.sh \"{cmd}\"")
+
+@bot.command()
 async def deleteThatShit(ctx, msg_id):
     if auth.check(ctx.author.id) < auth.MODERATOR:
         return
