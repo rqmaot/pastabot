@@ -67,10 +67,17 @@ async def player_res(ctx, player_list):
     for i in range(to_finish, len(str_list)):
         await ctx.send(str_list[i])
 
-
 @bot.event
 async def on_ready():
-    print(f"{bot.user} is online")
+    msg = f"{bot.user} is online"
+    print(msg)
+    # dm malapasta that the bot is online
+    user = await bot.fetch_user(1003070068206354473)
+    #printf(f"sending \"{msg}\" to {user}")
+    channel = user.dm_channel
+    if channel == None:
+        channel = await bot.create_dm(user)
+    await channel.send(msg)
 
 @bot.command()
 async def ping(ctx):
