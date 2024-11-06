@@ -1,0 +1,23 @@
+{
+    "storage" : "json with player database, relative to pastabot folder",
+    "auth": {
+        "admin": [
+            {"name": "", "id": "discord id"}
+        ],
+        "moderator": [],
+        "trusted": [],
+        "blacklist": []
+    },
+    "sounds": {                                                                               
+        "prefix": "sounds folder, relative to pastabot folder",
+        "sounds": {
+            "sound key": "sound file, relative to sounds folder"
+        }   
+    },
+    "minecraft": {
+        "prefix": "minecraft server directory, path relative to pastabot folder",
+        "jar": "server jar, relative to minecraft server folder",
+        "java": "java binary, path relative to pastabot folder"
+    },
+    "token": "bot token"
+}
