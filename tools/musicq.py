@@ -1,4 +1,3 @@
-from . import misc
 import os
 
 class QueueItem:

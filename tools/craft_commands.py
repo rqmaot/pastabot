@@ -5,7 +5,6 @@ import subprocess
 import os
 
 from . import mp3_util
-from . import misc
 from .auth import auth
 
 def get_params():

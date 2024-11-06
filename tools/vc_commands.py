@@ -1,10 +1,10 @@
 import discord
 from discord.ext import commands
 import json
+import os
 
 from . import mp3_util
 from . import musicq
-from . import misc
 from .auth import auth
 
 async def _connect(ctx):
@@ -36,6 +36,20 @@ async def clear(ctx):
     musicq.clear()
     await ctx.send("cleared the queue")
 
+def get_sound(sound):
+    with open("config.json") as config_file:
+        config = json.loads(config_file.read())
+        sounds = config["sounds"]
+        prefix = sounds["prefix"]
+        keys = sounds["sounds"]
+    for k in keys:
+        if k.lower() == sound.lower():
+            return f"{prefix}/{keys[k]}"
+    for f in os.listdir(prefix):
+        if sound.lower() in f.lower():
+            return f"{prefix}/{f}"
+    return None
+
 @commands.command()
 async def sound(ctx, *, args):
     if await auth.verify(ctx, auth.NOAUTH):
@@ -48,7 +62,7 @@ async def sound(ctx, *, args):
         await ctx.send("could not connect to voice")
         return
     try:
-        file = misc.get_sound(sound)
+        file = get_sound(sound)
         if file == None:
             await ctx.send("no such sound")
             return
@@ -98,17 +112,18 @@ def get_config():
 
 @commands.command()
 async def list_sounds(ctx, send_all_flag = None):
-    sounds = get_config()
-    if sounds == None:
-        await ctx.send("no sounds")
-        return
+    with open("config.json") as config_file:
+        config = json.loads(config_file.read())
+        sounds = config["sounds"]
+        prefix = sounds["prefix"]
+        keys = sounds["sounds"]
     await ctx.send("sounds:")
     out = ""
     if send_all_flag == None:
-        for sound in sounds["sounds"]:                                                                                                                                                        
+        for sound in keys:                                                                                                                                                        
             out += f"{sound}\n"
     else:
-        for file in os.listdir(sounds["prefix"]):
+        for file in os.listdir(prefix):
             out += f"{file}\n"
     await ctx.send(out)
 

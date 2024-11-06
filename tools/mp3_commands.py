@@ -1,8 +1,8 @@
 import discord
 from discord.ext import commands
+import os
 
 from . import mp3_util
-from . import misc
 from .auth import auth
 
 @commands.command()
@@ -23,8 +23,8 @@ async def mp3(ctx, link):
     except Exception as e:
         print(f"Error deleting message: {e}")
     try:
-        misc.rm(filepath)
-        mp3_util.rmdir(mp3_dir)
+        os.remove(filepath)
+        os.rmdir(mp3_dir)
     except Exception as e:
         print(f"Error deleting: {e}")
 
