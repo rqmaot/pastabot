@@ -12,12 +12,12 @@ def get_params():
         with open("config.json") as config_file:
             config = json.loads(config_file.read())
             params = config["minecraft"]
-            return (params["prefix"], params["jar"], params["java"])
+            return (params["prefix"], params["java"], params["preargs"], params["jar"], params["postargs"])
     except Exception as e:
         print(f"Failed to load minecraft params: {e}")
         return None
 
-(prefix, jar, java) = get_params()
+(prefix, java, preargs, jar, postargs) = get_params()
 java = os.path.abspath(java)
 
 @commands.command()
@@ -31,11 +31,9 @@ async def status(ctx):
     server_running = processes.find('java') != -1
     await ctx.send(f"The minecraft server is {'online' if server_running else 'offline'}")
 
-start_script = f"""session_name="craftsession"
-pkill java
-tmux kill-session -t $session_name
-cmd="{java} -Xmx1024M -Xms1024M -jar {jar} nogui"
-tmux new-session -d -s $session_name "$cmd" """
+start_script = ['pkill java',
+    'tmux kill-session -t craftsession',
+     f'tmux new-session -d -s craftsession "{java} {preargs} -jar {jar} {postargs}"']
 
 def cmd_script(cmd):
     return f"""cd {prefix}
@@ -46,13 +44,19 @@ def cmd_script(cmd):
 async def startcraft(ctx):
     if await auth.verify(ctx, auth.MODERATOR):
         return
-    global prefix, jar, java
     pwd = os.getcwd()
     os.chdir(prefix)
+    print("\n----------------")
+    print("Starting minecraft")
     print(os.getcwd())
     print(os.listdir())
-    print(start_script)
-    os.system(start_script)
+    print("----------------")
+    for cmd in start_script:
+        print(cmd)
+        try:
+            os.system(cmd)
+        except Exception as e:
+            print(f"ERROR: {e}")
     os.chdir(pwd)
     await ctx.send("Starting pastacraft")
 
