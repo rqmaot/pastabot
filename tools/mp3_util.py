@@ -23,7 +23,7 @@ def _ytdlp(link):
     info = ydl.extract_info(link)
     return info['title']
 
-def get_mp3(link):
+def _get_mp3(link):
     if not validators.url(link):
         return (None, None)
     global suffix
@@ -40,6 +40,15 @@ def get_mp3(link):
     os.remove(filename)
     os.chdir('../')
     return (mp3, mp3_dir)
+
+def get_mp3(link):
+    cwd = os.path.abspath('./')
+    try:
+        res = _get_mp3(link)
+        return res
+    except Exception as e:
+        os.chdir(cwd)
+        raise e
 
 def rmdir(d):
     os.rmdir(d)
