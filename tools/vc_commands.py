@@ -123,7 +123,7 @@ async def list_sounds(ctx, send_all_flag = None):
         for sound in keys:                                                                                                                                                        
             out += f"{sound}\n"
     else:
-        for file in os.listdir(prefix):
+        for file in sorted(os.listdir(prefix)):
             out += f"{file}\n"
     await ctx.send(out)
 
