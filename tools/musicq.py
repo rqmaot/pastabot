@@ -20,36 +20,35 @@ class Queue:
             return None
         item = self.q[0]
         self.q = self.q[1:]
-        to_rm = item.dir_to_rm.replace('"', '\\"')
-        os.system(f"rm -r \"{to_rm}\"")
+        if item.dir_to_rm:
+            to_rm = item.dir_to_rm.replace('"', '\\"')
+            os.system(f"rm -r \"{to_rm}\"")
         return item
     def peek(self):
         if self.is_empty():
             return None
         return self.q[0]
-
-queue = Queue()
-
-def clear():
-    while queue.length() > 1:
-        queue.dequeue()
-    if not queue.is_empty():
-        if not queue.peek().playing:
-            queue.dequeue()
-
-def add(sound, dir_to_rm, vc = None):
-    item = QueueItem(sound, dir_to_rm)
-    queue.enqueue(item)
-    if not queue.peek().playing:
-        play_next(vc)
-
-def play_next(vc):
-    if vc == None or len(queue.q) == 0:
-        return
-    item = queue.peek()
-    item.playing = True
-    def after(x):
-        queue.dequeue()
-        if(len(queue.q) != 0):
-            play_next(vc)
-    vc.play(item.sound, after = after)
+    def clear(self):
+        while self.length() > 1:
+            self.dequeue()
+        if not queue.is_empty():
+            if not self.peek().playing:
+                self.dequeue()
+    def add(self, sound, dir_to_rm, vc=None):
+        print(f"Adding {dir_to_rm}/{sound}")
+        item = QueueItem(sound, dir_to_rm)
+        self.enqueue(item)
+        if not self.peek().playing:
+            print("Playing it...")
+            self.play_next(vc)
+        else: print("A sound is already playing")
+    def play_next(self, vc):
+        if vc == None or len(self.q) == 0:
+            return
+        item = self.peek()
+        item.playing = True
+        def after(x):
+            self.dequeue()
+            if len(self.q) != 0:
+                self.play_next(vc)
+        vc.play(item.sound, after=after)

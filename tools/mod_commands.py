@@ -38,6 +38,8 @@ async def on_message(msg):
                 await msg.delete()
             except Exception as e:
                 print(f'Failed to delete: {e}')
+            return True
+    return False
 
 commands = [mute, unmute]
 

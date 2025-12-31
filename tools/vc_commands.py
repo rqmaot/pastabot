@@ -4,8 +4,12 @@ import json
 import os
 
 from . import mp3_util
-from . import musicq
 from .auth import auth
+
+musicq = None
+def init(q):
+    global musicq
+    musicq = q
 
 async def _connect(ctx):
     vc = ctx.voice_client
@@ -66,7 +70,8 @@ async def sound(ctx, *, args):
         if file == None:
             await ctx.send("no such sound")
             return
-        vc.play(discord.FFmpegPCMAudio(file, options='-filter:a loudnorm'))
+        # vc.play(discord.FFmpegPCMAudio(file, options='-filter:a loudnorm'))
+        musicq.add(discord.FFmpegPCMAudio(file, options='-filter:a loudnorm'), None, vc)
     except Exception as e:
         await ctx.send(f"Encountered error: {e}")
 

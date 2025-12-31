@@ -4,6 +4,7 @@ import json
 import os
 
 from tools.auth import auth
+from tools import musicq
 
 from tools import db_commands
 from tools import mp3_commands
@@ -13,6 +14,8 @@ from tools import craft_commands
 from tools import tts_commands
 from tools import watch_commands
 from tools import mod_commands
+from tools import count_commands
+from tools import viper_commands
 
 # set up the bot
 
@@ -54,9 +57,9 @@ async def on_message(msg):
     if await auth.verify(msg, auth.NOAUTH):
         return
     try:
+        if await mod_commands.on_message(msg): return
         await bot.process_commands(msg)
         await tts_commands.on_message(msg)
-        await mod_commands.on_message(msg)
     except Exception as e:
         await msg.channel.send(f"Encountered error: {e}")
 
@@ -150,7 +153,9 @@ add_all(db_commands.commands,
         craft_commands.commands,
         tts_commands.commands,
         watch_commands.commands,
-        mod_commands.commands)
+        mod_commands.commands,
+        count_commands.commands,
+        viper_commands.commands)
 
 add_helps(db_commands.helps,
           mp3_commands.helps,
@@ -158,7 +163,12 @@ add_helps(db_commands.helps,
           cipher_commands.helps,
           craft_commands.helps,
           tts_commands.helps,
-          watch_commands.helps)
+          watch_commands.helps,
+          viper_commands.helps)
+
+q = musicq.Queue()
+vc_commands.init(q)
+tts_commands.init(q)
 
 @bot.command()
 async def help(ctx):
