@@ -56,8 +56,8 @@ async def speak(ctx, filename, filedir):
         await ctx.send("could not connect to voice")
         return
     try:
-        sound = discord.FFmpegPCMAudio(f"{filedir}/{filename}", options='-filter:a loudnorm')
-        musicq.add(sound, filedir, vc)
+        # sound = discord.FFmpegPCMAudio(f"{filedir}/{filename}", options='-filter:a loudnorm')
+        musicq.add(f"{filedir}/{filename}", dir_to_rm=filedir, vc=vc, track=1)
         # vc.play(sound)
     except Exception as e:
         await ctx.send(f"Encountered error: {e}")

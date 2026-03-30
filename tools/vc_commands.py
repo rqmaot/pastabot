@@ -30,8 +30,9 @@ async def add(ctx, url):
     try:
         mp3, mp3_dir = mp3_util.get_mp3(url)
         filepath = f"./{mp3_dir}/{mp3}"
-        sound = discord.FFmpegPCMAudio(filepath, options='-filter:a loudnorm')
-        musicq.add(sound, mp3_dir, vc)
+        # sound = discord.FFmpegPCMAudio(filepath, options='-filter:a loudnorm')
+        # musicq.add(sound, mp3_dir, vc)
+        musicq.add(filepath, dir_to_rm=mp3_dir, vc=vc, track=2)
     except Exception as e:
         await ctx.send(f"Encountered error: {e}")
 
@@ -71,7 +72,8 @@ async def sound(ctx, *, args):
             await ctx.send("no such sound")
             return
         # vc.play(discord.FFmpegPCMAudio(file, options='-filter:a loudnorm'))
-        musicq.add(discord.FFmpegPCMAudio(file, options='-filter:a loudnorm'), None, vc)
+        # musicq.add(discord.FFmpegPCMAudio(file, options='-filter:a loudnorm'), None, vc)
+        musicq.add(file, vc=vc)
     except Exception as e:
         await ctx.send(f"Encountered error: {e}")
 

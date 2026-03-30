@@ -11,7 +11,7 @@ class Auth:
         self.ADMIN = 8
     def check(self, discord_id):
         # verify that config contains auth info
-        try: print(CONFIG.get(["auth"]))
+        try: _ = CONFIG.get(["auth"])
         except: 
             print("no auth")
             return self.BLACKLIST

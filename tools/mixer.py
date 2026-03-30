@@ -1,0 +1,83 @@
+# this should be a drop-in replacement for discord.FFmpegPCMAudio,
+# with the added mix_in method seen below in the Mixer class
+
+import discord
+import subprocess
+import audioop
+import threading
+
+# audio = 48K, 16-bit (2 bytes), dual channel
+# frame = 20ms 
+FRAME_SIZE = int(48000 * 2 * 2 * 20/1000)
+
+# utility class for a stream
+class FFmpegStream:
+    def __init__(self, path, after=None):
+        self.after = after
+        # get an ffmpeg stream of the source
+        self.proc = subprocess.Popen([
+            "ffmpeg", "-i", path,
+                "-f", "s16le", # 16-bit audio
+                "-ar", "48000", # bitrate
+                "-ac", "2", # dual channel
+                "-filter:a", "loudnorm", # normalize volume
+                "pipe:1" # pipe output instead of writing file
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL
+        )
+    def read(self): 
+        # get frame of data
+        data = self.proc.stdout.read(FRAME_SIZE)
+        # cleanup if we read nothing
+        if not data and self.after is not None:
+            self.after()
+            self.after = None
+        return data
+    def close(self):
+        # clean up the ffmpeg stream
+        if self.proc:
+            self.proc.kill()
+            self.proc = None
+
+class Mixer(discord.AudioSource):
+    def __init__(self, initial_path=None, after=None):
+        self.sources = []
+        self.lock = threading.Lock()
+        if initial_path: self.mix_in(initial_path, after)
+    # add a sound to the mixer
+    def mix_in(self, path, after=None):
+        stream = FFmpegStream(path, after)
+        with self.lock: self.sources.append(stream)
+    # used by discord to get a frame
+    def read(self):
+        with self.lock:
+            # play nothing if no sources (keeps stream alive)
+            if not self.sources:
+                return b'\x00' * FRAME_SIZE
+            # get each frame's chunks and update live sources
+            chunks = []
+            alive_sources = []
+            for s in self.sources:
+                data = s.read()
+                if data:
+                    chunks.append(data)
+                    alive_sources.append(s)
+                else:
+                    s.close()
+            self.sources = alive_sources
+        # no chunks = no live sources. play nothing as before
+        if not chunks:
+            return b'\x00' * FRAME_SIZE
+        # get chunks that are the right size
+        padded = []
+        for c in chunks:
+            # ensure length = frame size
+            if len(c) < FRAME_SIZE:
+                c += b'\x00' * (FRAME_SIZE - len(c))  # pad
+            padded.append(c)
+        # combine the chunks
+        mixed = padded[0]
+        for c in padded[1:]:
+            mixed = audioop.add(mixed, c, 2)
+        return mixed
