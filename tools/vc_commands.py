@@ -104,8 +104,14 @@ async def leave_voice(ctx):
 async def stop(ctx):
     if await auth.verify(ctx, auth.NOAUTH):
         return
-    await leave_voice(ctx)
-    await join_voice(ctx)
+    # await leave_voice(ctx)
+    # await join_voice(ctx)
+    try:
+        vc = ctx.guild.voice_client
+        if vc and vc.is_playing():
+            vc.stop()
+    except Exception as e:
+        await ctx.send(f"Failed: {e}")
 
 def get_config():
     try:
