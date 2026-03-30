@@ -4,7 +4,9 @@ import json
 import os
 
 from . import mp3_util
-from .auth import auth
+
+auth = None
+CONFIG = None
 
 musicq = None
 def init(q):
@@ -41,11 +43,9 @@ async def clear(ctx):
     await ctx.send("cleared the queue")
 
 def get_sound(sound):
-    with open("config.json") as config_file:
-        config = json.loads(config_file.read())
-        sounds = config["sounds"]
-        prefix = sounds["prefix"]
-        keys = sounds["sounds"]
+    sounds = CONFIG.get("sounds")
+    prefix = sounds["prefix"]
+    keys = sounds["sounds"]
     for k in keys:
         if k.lower() == sound.lower():
             return f"{prefix}/{keys[k]}"
@@ -109,19 +109,15 @@ async def stop(ctx):
 
 def get_config():
     try:
-        with open("config.json") as config_file:
-            config = json.loads(config_file.read())
-            return config["sounds"]
+        return CONFIG.get("sounds")
     except:
         return None
 
 @commands.command()
 async def list_sounds(ctx, send_all_flag = None):
-    with open("config.json") as config_file:
-        config = json.loads(config_file.read())
-        sounds = config["sounds"]
-        prefix = sounds["prefix"]
-        keys = sounds["sounds"]
+    sounds = CONFIG.get("sounds")
+    prefix = sounds["prefix"]
+    keys = sounds["sounds"]
     await ctx.send("sounds:")
     out = ""
     if send_all_flag == None:

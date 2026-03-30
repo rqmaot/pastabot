@@ -1,38 +1,37 @@
 import discord
 from discord.ext import commands
 import os
+import json
 
-from .auth import auth
+auth = None
+CONFIG = None
 
-def get_count(filename):
-    count = 0
-    with open(filename) as f:
-        try:
-            count = int(f.read())
-        except: pass
-    return count
+def get_count():
+    if CONFIG.exists("count"):
+        return CONFIG.get("count")
+    return 0
 
-def incr(filename):
-    count = get_count(filename)
-    with open(filename, "w") as f:
-        f.write(str(count + 1))
-    return count + 1
+def incr():
+    if CONFIG.exists("count"):
+        CONFIG.set("count", CONFIG.get("count") + 1)
+        return CONFIG.get("count")
+    CONFIG.add("count", 1)
+    return 1
 
 @commands.command()
 async def lils(ctx):
     if await auth.verify(ctx, auth.TRUSTED):
         return
-    await ctx.send(get_count("count.txt"))
+    await ctx.send(get_count())
 
 @commands.command()
 async def lilsplus(ctx):
     if await auth.verify(ctx, auth.TRUSTED): 
         return
     try:
-        await ctx.send(str(incr("count.txt")))
+        await ctx.send(str(incr()))
     except Exception as e:
         await ctx.send(f"error {e}")
 
 commands = [lils, lilsplus]
-
-helps =[]
+helps = []

@@ -3,7 +3,9 @@ from discord.ext import commands
 import os
 
 from . import mp3_util
-from .auth import auth
+
+auth = None
+CONFIG = None
 
 @commands.command()
 async def mp3(ctx, link):

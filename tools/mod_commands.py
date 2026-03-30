@@ -2,9 +2,10 @@ import discord
 from discord.ext import commands
 import os
 
-from .auth import auth
 from . import musicq
 
+auth = None
+CONFIG = None
 
 muted = []
 

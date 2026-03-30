@@ -1,5 +1,7 @@
 import json
 
+CONFIG = None
+
 class Auth:
     def __init__(self):
         self.BLACKLIST = 0
@@ -7,22 +9,15 @@ class Auth:
         self.TRUSTED = 2
         self.MODERATOR = 4
         self.ADMIN = 8
-        self.regenerate()
-    def regenerate(self):
-        try:
-            with open("config.json") as config_file:
-                config = json.loads(config_file.read())
-                self.auth = config["auth"]
-        except Exception as e:
-            print(f"Failed to generate auths: {e}")
-            self.auth = None
     def check(self, discord_id):
-        # if there's no auth file, no on has permissions
-        if self.auth == None:
+        # verify that config contains auth info
+        try: print(CONFIG.get(["auth"]))
+        except: 
+            print("no auth")
             return self.BLACKLIST
         # function to check if they have a permission type
         def auth_check(auth_type):
-            for entry in self.auth[auth_type]:
+            for entry in CONFIG.get(["auth", auth_type]):
                 if int(entry["id"]) == int(discord_id):
                     return True
             return False

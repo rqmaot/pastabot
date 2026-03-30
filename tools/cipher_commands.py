@@ -3,6 +3,9 @@ from discord.ext import commands
 
 from . import cipher
 
+auth = None
+CONFIG = None
+
 @commands.command()
 async def encrypt(ctx, key, *, args):
     msg = "".join(args)

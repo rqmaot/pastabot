@@ -1,8 +1,10 @@
 import discord
 from discord.ext import commands
 
-from .auth import auth
 from .db import db
+
+auth = None
+CONFIG = None
 
 async def player_res(ctx, player_list):
     if len(player_list) == 0:

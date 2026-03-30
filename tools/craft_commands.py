@@ -5,20 +5,23 @@ import subprocess
 import os
 
 from . import mp3_util
-from .auth import auth
+
+auth = None
+CONFIG = None
 
 def get_params():
     try:
-        with open("config.json") as config_file:
-            config = json.loads(config_file.read())
-            params = config["minecraft"]
-            return (params["prefix"], params["java"], params["preargs"], params["jar"], params["postargs"])
+        params = CONFIG.get("minecraft")
+        return (params["prefix"], params["java"], params["preargs"], params["jar"], params["postargs"])
     except Exception as e:
         print(f"Failed to load minecraft params: {e}")
         return None
 
-(prefix, java, preargs, jar, postargs) = get_params()
-java = os.path.abspath(java)
+prefix, java, preargs, jar, postargs = None, None, None, None, None
+def init():
+    global prefix, java, preargs, jar, postargs
+    (prefix, java, preargs, jar, postargs) = get_params()
+    # java = os.path.abspath(java)
 
 @commands.command()
 async def ip(ctx):
@@ -44,6 +47,7 @@ def cmd_script(cmd):
 async def startcraft(ctx):
     if await auth.verify(ctx, auth.MODERATOR):
         return
+    init()
     pwd = os.getcwd()
     os.chdir(prefix)
     print("\n----------------")

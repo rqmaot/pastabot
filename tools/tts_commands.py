@@ -3,7 +3,10 @@ from discord.ext import commands
 from gtts import gTTS
 import os
 
-from .auth import auth
+auth = None
+CONFIG = None
+
+bot = None
 
 musicq = None
 def init(q):
@@ -59,7 +62,25 @@ async def speak(ctx, filename, filedir):
     except Exception as e:
         await ctx.send(f"Encountered error: {e}")
 
-speak_for = []
+def speak_for(ctx, userid, tld, lang):
+    obj = {"channel": str(ctx.channel.id), "user": str(userid), "tld": tld, "lang": lang}
+    if CONFIG.exists("tts"):
+        CONFIG.get("tts").append(obj)
+    else:
+        CONFIG.add("tts", [obj])
+    CONFIG.save()
+
+def unspeak(ctx, userid):
+    if not CONFIG.exists("tts"): return
+    records = CONFIG.get("tts")
+    save = False
+    i = 0
+    while i < len(records):
+        if int(records[i]["channel"]) == int(ctx.channel.id) and int(records[i]["user"]) == int(userid):
+            del records[i]
+            save = True
+        else: i += 1
+    if save: CONFIG.save()
 
 @commands.command()
 async def tts(ctx, userid = None, tld = None, lang = None):
@@ -78,14 +99,9 @@ async def tts(ctx, userid = None, tld = None, lang = None):
         lang = 'en'
     print(f"setting {userid} {tld} {lang}")
     # remove them if they're already in there
-    i = 0
-    while i < len(speak_for):
-        if speak_for[i]["ctx"].channel.id == ctx.channel.id and speak_for[i]["user"] == userid:
-            del speak_for[i]
-        else:
-            i += 1
+    unspeak(ctx, int(userid))
     # add them to the list of people to speak for
-    speak_for.append({"ctx": ctx, "user": userid, "tld": tld, "lang": lang})
+    speak_for(ctx, userid, tld, lang)
 
 @commands.command()
 async def notts(ctx, userid = None):
@@ -95,16 +111,11 @@ async def notts(ctx, userid = None):
         userid = str(ctx.author.id)
     elif await auth.verify(ctx, auth.MODERATOR):
         return
-    i = 0
-    while i < len(speak_for):
-        if speak_for[i]["ctx"].channel.id == ctx.channel.id and speak_for[i]["user"] == userid:
-            del speak_for[i]
-        else:
-            i += 1
+    unspeak(ctx, userid)
 
 @commands.command()
 async def fixtts(ctx):
-    os.system("rm -r tts")
+    os.system("rm -rf tts")
 
 @commands.command()
 async def vtts(ctx):
@@ -120,21 +131,25 @@ Nigeria - com.ng"""
     await ctx.send(msg)
 
 async def on_message(msg):
-    ignore = ["!", "http", ":"]
+    if not CONFIG.exists("tts"): return
+    ignore = ["!", "http", ":", "<"]
     for i in ignore:
         if msg.content.startswith(i):
             return
     ctx = None
     tld = None
     lang = None
-    for user in speak_for:
-        if user["ctx"].channel.id == msg.channel.id and user["user"] == str(msg.author.id):
-            ctx = user["ctx"]
+    for user in CONFIG.get("tts"):
+        if int(user["channel"]) == int(msg.channel.id) and int(user["user"]) == int(msg.author.id):
+            ctx = await bot.get_context(msg)
             tld = user["tld"]
             lang = user["lang"]
             break
     if ctx == None:
         return
+    #await ctx.send(f"trying to speak with params: tld={tld} lang={lang}")
+    dbg = f"trying to speak with params: tld={tld} lang={lang}"
+    print(dbg)
     content = msg.content #.lower()
     try:
         (filename, filedir) = generate(content, str(msg.id), lang, tld)

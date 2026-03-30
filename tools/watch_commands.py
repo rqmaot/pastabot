@@ -2,57 +2,35 @@ import discord
 from discord.ext import commands
 import json
 
-from .auth import auth
-
-def get_filename():
-    with open('config.json') as config_file:
-        config = json.loads(config_file.read())
-        return config['watchlist']
-
-def file_is_empty(filename):
-    try:
-        with open(filename) as f:
-            return f.read().strip() == ''
-    except:
-        return True
+auth = None
+CONFIG = None
 
 def add_to_list(item):
-    filename = get_filename()
-    pre = '' if file_is_empty(filename) else '\n'
-    with open(filename, 'a') as f:
-        f.write(pre + item)
+    if not CONFIG.exists("watchlist"): CONFIG.add("watchlist", [])
+    CONFIG.get("watchlist").append(item)
+    CONFIG.save()
 
 def remove_item(item):
-    filename = get_filename()
-    with open(filename) as f:
-        lines = f.read().split('\n')
+    lines = CONFIG.get("watchlist")
     try:
         i = lines.index(item)
         res = lines[i]
         del lines[i]
-        with open(filename, 'w') as f:
-            f.write('\n'.join(lines))
+        CONFIG.save()
         return res
     except: return False
 
 def remove_index(i):
-    filename = get_filename()
-    with open(filename) as f:
-        lines = f.read().split('\n')
     try:
-        res = lines[i - 1]
-        del lines[i - 1]
-        with open(filename, 'w') as f:
-            f.write('\n'.join(lines))
+        res = CONFIG.get("watchlist")[i - 1]
+        del CONFIG.get("watchlist")[i - 1]
+        CONFIG.save()
         return res
     except: return False
 
 async def ls(ctx):
     try:
-        filename = get_filename()
-        f = open(filename)
-        lines = list(filter(lambda x : x != '', f.read().split('\n')))
-        f.close()
+        lines = CONFIG.get("watchlist")
     except: 
         await ctx.send("The watch list is empty")
         return

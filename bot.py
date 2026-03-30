@@ -2,34 +2,38 @@ import discord
 from discord.ext import commands
 import json
 import os
+import subprocess
 
-from tools.auth import auth
+from tools import auth as AUTH
 from tools import musicq
+from tools.config import Config
 
 from tools import db_commands
 from tools import mp3_commands
 from tools import vc_commands
 from tools import cipher_commands
 from tools import craft_commands
+from tools import rng_commands
 from tools import tts_commands
 from tools import watch_commands
 from tools import mod_commands
 from tools import count_commands
-from tools import viper_commands
+from tools import ftp_commands
 
 # set up the bot
 
-def initialize():
-    global TOKEN
-    global CONFIG
-    with open("config.json") as config_file:
-        CONFIG = json.loads(config_file.read())
-        TOKEN = CONFIG["token"]
+CONFIG = Config("config.json")
+TOKEN = CONFIG.get("token")
+
+AUTH.CONFIG = CONFIG
+auth = AUTH.auth
 
 intents = discord.Intents.default()
 intents.message_content = True
 
 bot = commands.Bot(command_prefix='!', intents=intents, help_command=None)
+
+tts_commands.bot = bot
 
 # add commands
 
@@ -43,9 +47,10 @@ async def send_dm(user_id, msg):
 
 @bot.event
 async def on_ready():
-    msg = f"{bot.user} is online"
+    pasta_ip = str(subprocess.check_output(['curl', 'ipinfo.io/ip']))[2:-1]
+    msg = f"{bot.user} is online ({pasta_ip})"
     try:
-        for admin in CONFIG["auth"]["admin"]:
+        for admin in CONFIG.get(["auth", "admin"]):
             await send_dm(admin["id"], msg)
     except: pass
     print(msg)
@@ -53,8 +58,6 @@ async def on_ready():
 @bot.event
 async def on_message(msg):
     if msg.author == bot.user:
-        return
-    if await auth.verify(msg, auth.NOAUTH):
         return
     try:
         if await mod_commands.on_message(msg): return
@@ -124,17 +127,9 @@ def add(commands):
     for cmd in commands:
         bot.add_command(cmd)
 
-def add_all(*commandses):
-    for cmds in commandses:
-        add(cmds)
-
 def add_to_helps(helps, more):
     for h in more:
         helps.append(h)
-
-def add_helps(*args):
-    for h in args:
-        add_to_helps(helps, h)
 
 async def help_command(ctx, helps):
     out = ""
@@ -146,25 +141,21 @@ helps = [
         "!ping : replies \"pong!\""
         ]
 
-add_all(db_commands.commands,
-        mp3_commands.commands,
-        vc_commands.commands,
-        cipher_commands.commands,
-        craft_commands.commands,
-        tts_commands.commands,
-        watch_commands.commands,
-        mod_commands.commands,
-        count_commands.commands,
-        viper_commands.commands)
-
-add_helps(db_commands.helps,
-          mp3_commands.helps,
-          vc_commands.helps,
-          cipher_commands.helps,
-          craft_commands.helps,
-          tts_commands.helps,
-          watch_commands.helps,
-          viper_commands.helps)
+for mod in [count_commands,
+            cipher_commands,
+            craft_commands,
+            db_commands,
+            ftp_commands,
+            mod_commands,
+            mp3_commands,
+            rng_commands,
+            tts_commands,
+            vc_commands,
+            watch_commands]:
+    add(mod.commands)
+    add_to_helps(helps, mod.helps)
+    mod.auth = auth
+    mod.CONFIG = CONFIG
 
 q = musicq.Queue()
 vc_commands.init(q)
@@ -178,7 +169,8 @@ async def help(ctx):
 async def reset(ctx):
     if auth.check(ctx.author.id) < auth.TRUSTED:
         return
-    oscmd("sh /root/run.sh")
+    CONFIG.save()
+    oscmd("sh /home/matt/pastabot/run.sh")
 
 helps.append("!reset : reboot the bot")
 
@@ -189,8 +181,7 @@ def oscmd(cmd):
         pass
 
 def main():
-    oscmd("rm -r tts")
-    initialize()
+    oscmd("rm -rf tts")
     bot.run(TOKEN)
 
 if __name__ == "__main__":

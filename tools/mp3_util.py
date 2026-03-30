@@ -16,8 +16,6 @@ def _ytdlp(link):
         'quiet': True,
         'restrictfilenames': True,
         'noplaylist': True,
-        'username': 'oauth2',
-        'password': ''
     }
     ydl = yt_dlp.YoutubeDL(options)
     info = ydl.extract_info(link)
