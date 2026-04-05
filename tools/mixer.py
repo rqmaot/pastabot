@@ -5,6 +5,7 @@ import discord
 import subprocess
 import audioop
 import threading
+import time
 
 # audio = 48K, 16-bit (2 bytes), dual channel
 # frame = 20ms 
@@ -49,6 +50,7 @@ class Mixer(discord.AudioSource):
     # add a sound to the mixer
     def mix_in(self, path, after=None, track=None):
         stream = FFmpegStream(path, after, track)
+        time.sleep(1)
         with self.lock: self.sources.append(stream)
     # used by discord to get a frame
     def read(self):
