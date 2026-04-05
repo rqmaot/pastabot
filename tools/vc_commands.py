@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 import json
 import os
+from pathlib import Path
 
 from . import mp3_util
 
@@ -43,16 +44,24 @@ async def clear(ctx):
     musicq.clear()
     await ctx.send("cleared the queue")
 
-def get_sound(sound):
+def get_sound(sound, root=None):
     sounds = CONFIG.get("sounds")
-    prefix = sounds["prefix"]
-    keys = sounds["sounds"]
-    for k in keys:
-        if k.lower() == sound.lower():
-            return f"{prefix}/{keys[k]}"
-    for f in os.listdir(prefix):
+    if root is None: root = sounds["prefix"]
+    parts = sound.split('/')
+    subdirs = []
+    for f in sorted(os.listdir(root)):
+        subpath = os.path.join(root, f)
+        if Path(subpath).is_dir():
+            if len(parts) > 1 and parts[0].lower() in f.lower():
+                sub = get_sound("/".join(parts[1:]), subpath)
+                if sub is not None: return sub
+            subdirs.append(subpath)
+            continue
         if sound.lower() in f.lower():
-            return f"{prefix}/{f}"
+            return subpath
+    for subdir in subdirs:
+        sub = get_sound(sound, subdir)
+        if sub is not None: return sub
     return None
 
 @commands.command()
@@ -103,15 +112,18 @@ async def leave_voice(ctx):
     await ctx.voice_client.disconnect()
 
 @commands.command()
-async def stop(ctx):
+async def stop(ctx, *args):
     if await auth.verify(ctx, auth.NOAUTH):
         return
     # await leave_voice(ctx)
     # await join_voice(ctx)
+    try: track = int(args[0])
+    except: track = None
     try:
         vc = ctx.guild.voice_client
-        if vc and vc.is_playing():
-            vc.stop()
+        # if vc and vc.is_playing():
+        #     vc.stop()
+        musicq.stop(vc, track)
     except Exception as e:
         await ctx.send(f"Failed: {e}")
 
@@ -121,20 +133,49 @@ def get_config():
     except:
         return None
 
+def get_list(query, path=None):
+    root = CONFIG.get("sounds")["prefix"]
+    if path is None: path = root
+    parts = query.split('/')
+    subdirs = []
+    for f in sorted(os.listdir(path)):
+        subpath = os.path.join(path, f)
+        if not Path(subpath).is_dir(): continue
+        subdirs.append(subpath)
+        if parts[0].lower() not in f.lower(): continue
+        if len(parts) > 1:
+            sub = get_list("/".join(parts[1:]), subpath)
+            if sub is not None: return sub
+            continue
+        files = []
+        dirs = []
+        for f1 in sorted(os.listdir(subpath)):
+            subsubpath = os.path.join(subpath, f1)
+            name = subsubpath[(len(root) + 1):]
+            if Path(subsubpath).is_dir(): dirs.append(name + "/")
+            else: files.append(name)
+        return "\n".join(files + dirs)
+    for subdir in subdirs:
+        sub = get_list(query, subdir)
+        if sub is not None: return sub
+    return None
+
 @commands.command()
-async def list_sounds(ctx, send_all_flag = None):
-    sounds = CONFIG.get("sounds")
-    prefix = sounds["prefix"]
-    keys = sounds["sounds"]
-    await ctx.send("sounds:")
-    out = ""
-    if send_all_flag == None:
-        for sound in keys:                                                                                                                                                        
-            out += f"{sound}\n"
-    else:
-        for file in sorted(os.listdir(prefix)):
-            out += f"{file}\n"
-    await ctx.send(out)
+async def list_sounds(ctx, query=None):
+    if query is None: 
+        await ctx.send("sounds:")
+        files = []
+        dirs = []
+        root = CONFIG.get("sounds")["prefix"]
+        for path in sorted(os.listdir(root)):
+            if Path(os.path.join(root, path)).is_dir(): dirs.append(path + "/")
+            else: files.append(path)
+        await ctx.send("\n".join(files + dirs))
+        return
+    res = get_list(query)
+    if res is None:
+        await ctx.send("No sounds found. Try with no arguments for root list")
+    await ctx.send(f"{query} sounds:\n{res}")
 
 commands = [add, 
             clear, 

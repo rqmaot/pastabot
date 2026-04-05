@@ -157,7 +157,54 @@ async def on_message(msg):
     except:
         print("Failed to speak")
 
-commands = [tts, notts, vtts, fixtts]
+def buffer_line(line, MAX_MSG_LEN):
+    messages = []
+    while len(line) > MAX_MSG_LEN:
+        messages.append(line[:MAX_MSG_LEN])
+        line = line[MAX_MSG_LEN:]
+    messages.append(line)
+    return list(filter(lambda msg: msg.strip() != '', messages))
+
+def buffer_msg(msg):
+    lines = msg.split('\n')
+    messages = []
+    curr = ''
+    MAX_MSG_LEN = 1900
+    for line in lines:
+        if len(curr) + len(line) >= MAX_MSG_LEN:
+            messages.append(curr)
+            curr = line
+        else:
+            curr += "\n" + line
+            continue
+        if len(line) >= MAX_MSG_LEN:
+            messages += buffer_line("\n" + line, MAX_MSG_LEN)
+            curr = ""
+    messages.append(curr)
+    return list(filter(lambda msg: msg.strip() != '', messages))
+
+@commands.command()
+async def whotts(ctx):
+    if await auth.verify(ctx, auth.MODERATOR): return
+    entries = {}
+    for entry in CONFIG.get("tts"):
+        channel = bot.get_channel(int(entry['channel']))
+        user = await bot.fetch_user(int(entry['user']))
+        if channel in entries: entries[channel].append(user)
+        else: entries[channel] = [user]
+    out = ""
+    for channel in entries:
+        try: out += f"\n\n[{channel.name.strip()}]  "
+        except: out += f"\n\n<unknown channel [{channel}]>  "
+        for user in entries[channel]:
+            try: out += f"\n - {user.global_name} ({user.name})  "
+            except: out += f"\n - <unknown user [{user}]  "
+    if len(out) == 0: await ctx.send("No tts entries")
+    else: 
+        for msg in buffer_msg(out):
+            await ctx.send(msg)
+
+commands = [tts, notts, vtts, fixtts, whotts]
 
 helps = [
         "!tts [user id] [accent] : start saying person's messages in vc",

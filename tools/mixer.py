@@ -12,8 +12,9 @@ FRAME_SIZE = int(48000 * 2 * 2 * 20/1000)
 
 # utility class for a stream
 class FFmpegStream:
-    def __init__(self, path, after=None):
+    def __init__(self, path, after=None, track=None):
         self.after = after
+        self.track = track
         # get an ffmpeg stream of the source
         self.proc = subprocess.Popen([
             "ffmpeg", "-i", path,
@@ -41,13 +42,13 @@ class FFmpegStream:
             self.proc = None
 
 class Mixer(discord.AudioSource):
-    def __init__(self, initial_path=None, after=None):
+    def __init__(self, initial_path=None, after=None, track=None):
         self.sources = []
         self.lock = threading.Lock()
-        if initial_path: self.mix_in(initial_path, after)
+        if initial_path: self.mix_in(initial_path, after, track)
     # add a sound to the mixer
-    def mix_in(self, path, after=None):
-        stream = FFmpegStream(path, after)
+    def mix_in(self, path, after=None, track=None):
+        stream = FFmpegStream(path, after, track)
         with self.lock: self.sources.append(stream)
     # used by discord to get a frame
     def read(self):

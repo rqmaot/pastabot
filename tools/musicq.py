@@ -47,6 +47,20 @@ class Queue:
         return self.qs[track][0]
     def clear(self, track=0):
         while self.length(track) > 1: self.dequeue(track)
+    def stop(self, vc, track=None):
+        # if vc and vc.is_playing: vc.stop()
+        if self.mixer:
+            i = 0
+            while i < len(self.mixer.sources):
+                if track is None or self.mixer.sources[i].track == track:
+                    if self.mixer.sources[i].after:
+                        self.mixer.sources[i].after()
+                    self.mixer.sources[i].close()
+                    del self.mixer.sources[i]
+                else: i += 1
+        if len(self.mixer.sources) == 0:
+            if vc and vc.is_playing(): vc.stop()
+            self.mixer = None
     def add(self, path, dir_to_rm=None, vc=None, track=0):
         print(f"Adding {path}")
         item = QueueItem(path, dir_to_rm)
@@ -78,7 +92,7 @@ class Queue:
             vc.loop.call_soon_threadsafe(self._after_impl, track, vc)
         self.set_playing(track)
         if self.mixer is None or not vc.is_playing():
-            self.mixer = Mixer(item.path, after)
+            self.mixer = Mixer(item.path, after, track)
             vc.play(self.mixer)
         else:
-            self.mixer.mix_in(item.path, after)
+            self.mixer.mix_in(item.path, after, track)
