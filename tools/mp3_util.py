@@ -1,11 +1,12 @@
 import json
 import os
+import subprocess
 import validators
 import yt_dlp
 import ffmpeg
 
 try:
-    os.system("rm -r mp3-*")
+    subprocess.run(['rm', '-rf', 'mp3-*'], capture_output=True)
 except:
     pass
 

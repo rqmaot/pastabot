@@ -189,6 +189,7 @@ async def whotts(ctx):
     entries = {}
     for entry in CONFIG.get("tts"):
         channel = bot.get_channel(int(entry['channel']))
+        if channel is None: channel = int(entry['channel'])
         user = await bot.fetch_user(int(entry['user']))
         if channel in entries: entries[channel].append(user)
         else: entries[channel] = [user]

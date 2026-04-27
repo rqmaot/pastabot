@@ -14,6 +14,7 @@ from tools import vc_commands
 from tools import cipher_commands
 from tools import craft_commands
 from tools import rng_commands
+from tools import steam_commands
 from tools import tts_commands
 from tools import watch_commands
 from tools import mod_commands
@@ -53,6 +54,7 @@ async def on_ready():
         for admin in CONFIG.get(["auth", "admin"]):
             await send_dm(admin["id"], msg)
     except: pass
+    steam_commands.init(bot)
     print(msg)
 
 @bot.event
@@ -149,6 +151,7 @@ for mod in [count_commands,
             mod_commands,
             mp3_commands,
             rng_commands,
+            steam_commands,
             tts_commands,
             vc_commands,
             watch_commands]:
@@ -174,14 +177,8 @@ async def reset(ctx):
 
 helps.append("!reset : reboot the bot")
 
-def oscmd(cmd):
-    try:
-        os.system(cmd)
-    except:
-        pass
-
 def main():
-    oscmd("rm -rf tts")
+    subprocess.run(['rm', '-rf', 'tts'], capture_output=True)
     bot.run(TOKEN)
 
 if __name__ == "__main__":

@@ -17,14 +17,14 @@ class FFmpegStream:
         self.after = after
         self.track = track
         # get an ffmpeg stream of the source
-        self.proc = subprocess.Popen([
-            "ffmpeg", "-i", path,
-                "-f", "s16le", # 16-bit audio
-                "-ar", "48000", # bitrate
-                "-ac", "2", # dual channel
-                "-filter:a", "loudnorm", # normalize volume
-                "pipe:1" # pipe output instead of writing file
-            ],
+        af = "volume=1.5" if track == 1 else "loudnorm"
+        cmd = ["ffmpeg", "-i", path,
+               "-f", "s16le", # signed 16-bit little-endian
+               "-ar", "48000", # bitrate
+               "-ac", "2", # dual channel
+               "-filter:a", af, # normalize
+               "pipe:1"] # send to pipe instead of file
+        self.proc = subprocess.Popen(cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.DEVNULL
         )
