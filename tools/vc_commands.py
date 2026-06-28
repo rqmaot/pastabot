@@ -17,10 +17,13 @@ def init(q):
 async def _connect(ctx):
     vc = ctx.voice_client
     if vc == None:
+        await musicq.lock.acquire()
         try:
             vc = await ctx.author.voice.channel.connect()
         except Exception as e:
             return None
+        finally:
+            musicq.lock.release()
     return vc
 
 @commands.command(aliases = ['play'])
@@ -112,6 +115,18 @@ async def leave_voice(ctx):
     await ctx.voice_client.disconnect()
 
 @commands.command()
+async def in_vc(ctx, send=True):
+    if await auth.verify(ctx, auth.NOAUTH): return
+    try:
+        vc = await _connect(ctx)
+        members = map(lambda member: str(member.id), vc.channel.members)
+        if send: await ctx.send(', '.join(members))
+        return list(members)
+    except Exception as e:
+        if send: await ctx.send(f"!in_vc error: {e}")
+        return []
+
+@commands.command()
 async def stop(ctx, *args):
     if await auth.verify(ctx, auth.NOAUTH):
         return
@@ -183,7 +198,8 @@ commands = [add,
             join_voice, 
             leave_voice, 
             stop, 
-            list_sounds]
+            list_sounds,
+            in_vc]
 
 helps = [
         "!play [link] : adds a song to the queue",

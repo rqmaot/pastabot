@@ -2,11 +2,15 @@ import discord
 from discord.ext import commands
 from gtts import gTTS
 import os
+import re
+import time
 
 auth = None
 CONFIG = None
 
 bot = None
+
+char_hates_lily = None
 
 musicq = None
 def init(q):
@@ -16,17 +20,35 @@ def init(q):
 async def _connect(ctx):
     vc = ctx.voice_client
     if vc == None:
+        await musicq.lock.acquire()
         try:
             vc = await ctx.author.voice.channel.connect()
         except Exception as e:
             return None
+        finally: musicq.lock.release()
     return vc
 
-def generate(speech, msgid, lang='en', tld='co.uk'):
+async def in_vc(ctx):
+    if await auth.verify(ctx, auth.NOAUTH): return
     try:
-        os.mkdir('tts')
-    except:
-        pass
+        vc = await _connect(ctx)
+        members = map(lambda member: str(member.id), vc.channel.members)
+        # if send: await ctx.send(', '.join(members))
+        return list(members)
+    except Exception as e:
+        # if send: await ctx.send(f"!in_vc error: {e}")
+        return []
+
+async def vc_is_just_char_and_lily(ctx):
+    CHAR = '320298663161102336'
+    LILY = '410075317877735424'
+    PASTABOT = '1114245939557842955'
+    members = await in_vc(ctx)
+    return len(members) == 3 and CHAR in members and LILY in members and PASTABOT in members
+
+def generate(speech, msgid, lang='en', tld='co.uk'):
+    try: os.mkdir('tts')
+    except: pass
     os.mkdir(f'tts/{msgid}')
     def gen_with_args(use_lang, use_tld):
         try:
@@ -57,10 +79,11 @@ async def speak(ctx, filename, filedir):
         return
     try:
         # sound = discord.FFmpegPCMAudio(f"{filedir}/{filename}", options='-filter:a loudnorm')
-        musicq.add(f"{filedir}/{filename}", dir_to_rm=filedir, vc=vc, track=1)
+        async with musicq.lock:
+            musicq.add(f"{filedir}/{filename}", dir_to_rm=filedir, vc=vc, track=1)
         # vc.play(sound)
     except Exception as e:
-        await ctx.send(f"Encountered error: {e}")
+        await ctx.send(f"Encountered error (speak): {e}")
 
 def speak_for(ctx, userid, tld, lang):
     obj = {"channel": str(ctx.channel.id), "user": str(userid), "tld": tld, "lang": lang}
@@ -130,12 +153,17 @@ South Africa - co.za
 Nigeria - com.ng"""
     await ctx.send(msg)
 
+def clean_msg(msg):
+    ignore = ["!", "http", ":", "<"]
+    keep_capital = ["AI", "VR", "NHS"]
+    def map_word(word):
+        if True in map(lambda x: word.startswith(x), ignore): return ''
+        if word == word.upper() and word not in keep_capital: return word.lower()
+        return word
+    return ' '.join(map(map_word, re.split('() ', msg)))
+
 async def on_message(msg):
     if not CONFIG.exists("tts"): return
-    ignore = ["!", "http", ":", "<"]
-    for i in ignore:
-        if msg.content.startswith(i):
-            return
     ctx = None
     tld = None
     lang = None
@@ -145,17 +173,27 @@ async def on_message(msg):
             tld = user["tld"]
             lang = user["lang"]
             break
-    if ctx == None:
-        return
-    #await ctx.send(f"trying to speak with params: tld={tld} lang={lang}")
+    if ctx == None: return
+    if msg.content.startswith("!"): return
+    content = clean_msg(msg.content.replace('(', ' ').replace(')', ' ').replace('https', ' https'))
+    if content.strip() == '': return
+    # special case: char and lily alone, char speaking
+    CHAR = '320298663161102336'
+    if str(msg.author.id) == CHAR and await vc_is_just_char_and_lily(ctx):
+        global char_hates_lily
+        if ' '.join(content.split()).lower() == 'i hate lily':
+            char_hates_lily = time.time()
+            await ctx.send("ok, overridden for an hour")
+        elif char_hates_lily is None or time.time() - char_hates_lily > 60 * 60:
+            await ctx.send('smh char talk to your girlfriend. can override with "i hate lily"')
+            # await ctx.send(f'content="{content}"')
+            return
     dbg = f"trying to speak with params: tld={tld} lang={lang}"
     print(dbg)
-    content = msg.content #.lower()
     try:
         (filename, filedir) = generate(content, str(msg.id), lang, tld)
         await speak(ctx, filename, filedir)
-    except:
-        print("Failed to speak")
+    except: print("Failed to speak")
 
 def buffer_line(line, MAX_MSG_LEN):
     messages = []
