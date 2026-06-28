@@ -1,4 +1,5 @@
 import os
+import asyncio
 from .mixer import Mixer
 
 class QueueItem:
@@ -15,6 +16,7 @@ class Queue:
         self.qs = {}
         self.mixer = None
         self.active = set()
+        self.lock = asyncio.Lock()
     def is_empty(self, track=0):
         return track not in self.qs or len(self.qs[track]) == 0
     def all_empty(self):

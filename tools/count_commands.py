@@ -11,12 +11,14 @@ def get_count():
         return CONFIG.get("count")
     return 0
 
-def incr():
+def incr(delta=1, init=1):
     if CONFIG.exists("count"):
-        CONFIG.set("count", CONFIG.get("count") + 1)
+        CONFIG.set("count", CONFIG.get("count") + delta)
+        CONFIG.save()
         return CONFIG.get("count")
-    CONFIG.add("count", 1)
-    return 1
+    CONFIG.add("count", init)
+    CONFIG.save()
+    return init
 
 @commands.command()
 async def lils(ctx):
@@ -33,5 +35,11 @@ async def lilsplus(ctx):
     except Exception as e:
         await ctx.send(f"error {e}")
 
-commands = [lils, lilsplus]
+@commands.command()
+async def lilsminus(ctx):
+    if await auth.verify(ctx, auth.MODERATOR): return
+    try: await ctx.send(str(incr(-1)))
+    except Exception as e: await ctx.send(f"error {e}")
+
+commands = [lils, lilsplus, lilsminus]
 helps = []

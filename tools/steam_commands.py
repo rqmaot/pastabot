@@ -65,7 +65,7 @@ async def check_sales():
         for app_id in CONFIG.get("steam")[user_id]:
             try:
                 info = get_game_info(int(app_id))
-                if info.final < CONFIG.get("steam")[user_id][app_id]["prev"]:
+                if int(info.final) < int(CONFIG.get("steam")[user_id][app_id]["prev"]):
                     notif_channel = int(CONFIG.get("steam")[user_id][app_id]["channel"])
                     if notif_channel in sales: sales[notif_channel].append(info)
                     else: sales[notif_channel] = [info]
@@ -86,7 +86,7 @@ async def check_sales():
         user = await bot.fetch_user(int(user_id))
         channel = user.dm_channel
         if channel is None: channel = await bot.create_dm(user)
-        msg = "\n".join(map(ping_user, sales))
+        msg = "\n".join([await ping_user(channel_id) for channel_id in sales])
         await channel.send(msg)
         messages[user_id]['sale'] = msg
         # await channel.send("\n".join(map(str, sales)))
