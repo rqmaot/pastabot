@@ -3,6 +3,7 @@ from discord.ext import commands
 import json
 import os
 import subprocess
+import random
 
 from tools import auth as AUTH
 from tools import musicq
@@ -65,6 +66,9 @@ async def on_message(msg):
         if await mod_commands.on_message(msg): return
         await bot.process_commands(msg)
         await tts_commands.on_message(msg)
+        if "🥺" in msg.content and random.randint(1, 10) == 10:
+            ctx = await bot.get_context(msg)
+            await ctx.send(file=discord.File('/home/matt/pastabot/wtf.png'))
     except Exception as e:
         await msg.channel.send(f"Encountered error: {e}")
 
