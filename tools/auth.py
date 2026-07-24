@@ -1,23 +1,22 @@
 import json
 
-CONFIG = None
-
 class Auth:
-    def __init__(self):
+    def __init__(self, config):
         self.BLACKLIST = 0
         self.NOAUTH = 1
         self.TRUSTED = 2
         self.MODERATOR = 4
         self.ADMIN = 8
+        self.config = config
     def check(self, discord_id):
         # verify that config contains auth info
-        try: _ = CONFIG.get(["auth"])
-        except: 
-            print("no auth")
+        try: _ = self.config.get(["auth"])
+        except Exception as e: 
+            print(f"no auth: {e}")
             return self.BLACKLIST
         # function to check if they have a permission type
         def auth_check(auth_type):
-            for entry in CONFIG.get(["auth", auth_type]):
+            for entry in self.config.get(["auth", auth_type]):
                 if int(entry["id"]) == int(discord_id):
                     return True
             return False
@@ -36,5 +35,3 @@ class Auth:
             await ctx.send("you are not authorized to use this command")
             return True
         return False
-
-auth = Auth()
