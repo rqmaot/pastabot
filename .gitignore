@@ -3,5 +3,6 @@ __pycache__
 *.swp
 count.txt
 tts/
+piper/
 watch.txt
 PLAYER_STORAGE.json

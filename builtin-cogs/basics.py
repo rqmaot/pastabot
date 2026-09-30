@@ -1,0 +1,37 @@
+import discord
+from discord.ext import commands
+import subprocess
+
+from app import Auth, command
+
+class Basics(commands.Cog):
+    def __init__(self, app):
+        self.app = app
+    @commands.Cog.listener()
+    async def on_ready(self):
+        pasta_ip = self.app.get_ip()
+        msg = f'{self.app.bot.user} is online ({pasta_ip})'
+        try:
+            for admin in self.app.config['auth']['admin']:
+                await self.app.send_dm(admin, msg)
+        except Exception as e: print(f'basics.on_ready: {e}')
+        print(msg)
+    @command(help='Replies with "pong!"')
+    async def ping(self, ctx):
+        await ctx.send('pong!')
+    @command(help='Replies with the bot\'s IP')
+    async def ip(self, ctx):
+        await ctx.send(self.app.get_ip())
+    @command(help='Repeats what you say', auth=Auth.MODERATOR)
+    async def echo(self, ctx, *content):
+        await ctx.send(' '.join(content))
+    @command(help='Sends a DM through the bot', auth=Auth.ADMIN)
+    async def dm(self, ctx, user_id, *content):
+        await self.send_dm(user_id, ' '.join(content))
+    @command(help='Replies with the username associated with the given ID')
+    async def find(self, ctx, discord_id):
+        user = await self.app.bot.fetch_user(int(discord_id))
+        await ctx.send(str(user))
+    @command(help='Replies with your ID')
+    async def whoami(self, ctx):
+        await ctx.send(ctx.author.id)

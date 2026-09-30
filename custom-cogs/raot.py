@@ -1,12 +1,13 @@
-import discord
 from discord.ext import commands
 import json
+
+from app import Auth, command
 
 class RAOT(commands.Cog):
     def __init__(self, app):
         self.app = app
         try:
-            self.path = self.app.config.get('raot')
+            self.path = self.app.config['raot']
             with open(self.path) as f:
                 self.json = json.loads(f.read())
         except Exception as e:
@@ -66,22 +67,22 @@ class RAOT(commands.Cog):
                 curr = line
             else: curr += '\n' + line
         if curr.strip() != '': await ctx.send(curr)
-    @commands.command(help='Search a RAOT player by their ID')
+    @command(help='Search a RAOT player by their ID')
     async def id(self, ctx, raot_id):
         try: await self.send_results(ctx, self.search_id(raot_id))
         except Exception as e: await ctx.send(f'raot.id: {e}')
-    @commands.command(help='Search a RAOT player by their name')
+    @command(help='Search a RAOT player by their name')
     async def name(self, ctx, name):
         try: await self.send_results(ctx, self.search_name(name))
         except Exception as e: await ctx.send(f'raot.name: {e}')
-    @commands.command(help='Check the DB for matches in an entire lobby from RAOT\'s list command')
+    @command(help='Check the DB for matches in an entire lobby from RAOT\'s list command')
     async def list(self, ctx, raot_list):
         try:
             results = self.add_list(raot_list)
             self.save()
             await self.send_results(ctx, results)
         except Exception as e: await ctx.send(f'raot.list: {e}')
-    @commands.command(help='Get the raw JSON data for the RAOT database')
+    @command(help='Get the raw JSON data for the RAOT database')
     async def dump(self, ctx):
         try: await ctx.send(file=discord.File(self.path))
         except Exception as e: await ctx.send(f'raot.dump: {e}')

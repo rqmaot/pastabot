@@ -1,10 +1,12 @@
 from discord.ext import commands
 import random
 
-class Rng(commands.Cog):
+from app import command
+
+class RNG(commands.Cog):
     def __init__(self, app):
         self.app = app
-    @commands.command(help='Pick a random number from 1 to n')
+    @command(help='Pick a random number from 1 to n')
     async def rng(self, ctx, n):
         try:
             n = int(n)
@@ -14,7 +16,7 @@ class Rng(commands.Cog):
         random.seed()
         x = random.randint(1, n)
         await ctx.send(f'Chose {x}')
-    @commands.command(help='Randomly decide between a comma-separated list of options')
+    @command(help='Randomly decide between a comma-separated list of options')
     async def choose(self, ctx, *choices):
         try:
             random.seed()

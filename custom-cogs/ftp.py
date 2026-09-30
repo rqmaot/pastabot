@@ -1,10 +1,11 @@
 from discord.ext import commands
-import subprocess
+
+from app import command
 
 class Ftp(commands.Cog):
     def __init__(self, app):
         self.app = app
-    @commands.command(help='Get information on using Pastabot\'s FTP')
+    @command(help='Get information on using Pastabot\'s FTP')
     async def ftp(self, ctx):
         ip = self.app.get_ip()
         msg = f"""To use Pastabot's FTP server, use this info in your FTP client (e.g., Filezilla):

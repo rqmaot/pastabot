@@ -3,16 +3,17 @@ import json
 import os
 from pathlib import Path
 
+from app import Auth, command
+
 class Sounds(commands.Cog):
     def __init__(self, app):
         self.app = app
-    @commands.command(help='Clear the sound queue')
+    @command(help='Clear the sound queue')
     async def clear(self, ctx):
-        if await self.app.auth.verify(ctx, self.app.auth.NOAUTH): return
         self.app.musicq.clear()
         await ctx.send("cleared the queue")
     def get_sound(self, sound, root=None):
-        sounds = self.app.config.get('sounds')
+        sounds = self.app.config['sounds']
         if root is None: root = sounds['prefix']
         parts = sound.split('/')
         subdirs = []
@@ -29,9 +30,8 @@ class Sounds(commands.Cog):
             sub = self.get_sound(sound, subdir)
             if sub is not None: return sub
         return None
-    @commands.command(help='Play a sound by its name/path')
+    @command(help='Play a sound by its name/path')
     async def sound(self, ctx, *sound):
-        if await self.app.auth.verify(ctx, self.app.auth.NOAUTH): return
         sound = ' '.join(sound).strip()
         try: vc = await self.app.connect_to_vc(ctx)
         except:
@@ -45,17 +45,15 @@ class Sounds(commands.Cog):
             self.app.musicq.add(file, vc=vc)
         except Exception as e:
             await ctx.send(f'sounds.sound: {e}')
-    @commands.command(help='Connect the bot to the VC you\'re in')
+    @command(help='Connect the bot to the VC you\'re in')
     async def join(self, ctx):
         try: await self.app.connect_to_vc(ctx)
         except: await ctx.send(f'sounds.join: {e}')
-    @commands.command(help='Disconnect the bot from VC')
+    @command(help='Disconnect the bot from VC')
     async def leave(self, ctx):
-        if await self.app.auth.verify(ctx, self.app.auth.NOAUTH): return
         await ctx.voice_client.disconnect()
-    @commands.command(help='Stop the currently playing sound')
+    @command(help='Stop the currently playing sound')
     async def stop(self, ctx, track=None):
-        if await self.app.auth.verify(ctx, self.app.auth.NOAUTH): return
         try: track = int(track)
         except: track = None
         try:
@@ -64,7 +62,7 @@ class Sounds(commands.Cog):
         except Exception as e:
             await ctx.send(f'sounds.stop: {e}')
     def get_list(self, query, path=None):
-        root = self.app.config.get("sounds")["prefix"]
+        root = self.app.config["sounds"]["prefix"]
         if path is None: path = root
         parts = query.split('/')
         subdirs = []
@@ -89,13 +87,13 @@ class Sounds(commands.Cog):
             sub = self.get_list(query, subdir)
             if sub is not None: return sub
         return None
-    @commands.command(help='Get a list of sounds, optionally under a particular directory')
+    @command(help='Get a list of sounds, optionally under a particular directory')
     async def sounds(self, ctx, query=None):
         if query is None:
             await ctx.send('sounds:')
             files = []
             dirs = []
-            root = self.app.config.get('sounds')['prefix']
+            root = self.app.config['sounds']['prefix']
             for path in sorted(os.listdir(root)):
                 if Path(os.path.join(root, path)).is_dir(): dirs.append(path + '/')
                 else: files.append(path)

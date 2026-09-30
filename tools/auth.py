@@ -1,37 +1,74 @@
 import json
+from functools import cache
 
 class Auth:
+    BLACKLIST = 0
+    NOAUTH = 1
+    TRUSTED = 2
+    MODERATOR = 4
+    ADMIN = 8
+    @cache
+    @staticmethod
+    def name_to_level(name=None):
+        themap = {'blacklist': Auth.BLACKLIST,
+                  'noauth': Auth.NOAUTH,
+                  'trusted': Auth.TRUSTED,
+                  'moderator': Auth.MODERATOR,
+                  'admin': Auth.ADMIN}
+        if name is None: return themap
+        return themap[name]
+    @cache
+    @staticmethod
+    def level_to_name(level=None):
+        themap = {Auth.BLACKLIST: 'blacklist',
+                  Auth.NOAUTH: 'noauth',
+                  Auth.TRUSTED: 'trusted',
+                  Auth.MODERATOR: 'moderator',
+                  Auth.ADMIN: 'admin'}
+        if level is None: return themap
+        return themap[level]
     def __init__(self, config):
-        self.BLACKLIST = 0
-        self.NOAUTH = 1
-        self.TRUSTED = 2
-        self.MODERATOR = 4
-        self.ADMIN = 8
         self.config = config
     def check(self, discord_id):
         # verify that config contains auth info
-        try: _ = self.config.get(["auth"])
-        except Exception as e: 
-            print(f"no auth: {e}")
+        if 'auth' not in self.config:
+            print(f"no auth")
             return self.BLACKLIST
-        # function to check if they have a permission type
-        def auth_check(auth_type):
-            for entry in self.config.get(["auth", auth_type]):
-                if int(entry["id"]) == int(discord_id):
-                    return True
-            return False
         # check all the permissions
-        if auth_check("blacklist"):
-            return self.BLACKLIST
-        if auth_check("admin"):
-            return self.ADMIN
-        if auth_check("moderator"):
-            return self.MODERATOR
-        if auth_check("trusted"):
-            return self.TRUSTED
+        for name in Auth.name_to_level():
+            if name not in self.config['auth']: continue
+            if str(discord_id) in self.config['auth'][name]:
+                return Auth.name_to_level(name)
         return self.NOAUTH
     async def verify(self, ctx, min_auth):
+        if min_auth not in Auth.level_to_name():
+            min_auth = Auth.NOAUTH
         if self.check(ctx.author.id) < min_auth:
             await ctx.send("you are not authorized to use this command")
             return True
         return False
+    def get_auth_string(self, user_id):
+        return Auth.level_to_name(self.check(user_id))
+    async def update_auth(self, ctx, tgt_id, tgt_name, auth_name):
+        user_auth = self.check(int(ctx.author.id))
+        tgt_auth = self.check(int(tgt_id))
+        if auth_name not in Auth.name_to_level():
+            await ctx.send(f'Unknown auth level "{auth_name}". Possible levels: {', '.join(Auth.name_to_level())}')
+            return
+        level = Auth.name_to_level(auth_name)
+        if user_auth <= tgt_auth:
+            await ctx.send('You can only modify auth for those with less auth than you')
+            return
+        if user_auth <= level:
+            await ctx.send('You can only set someone\'s auth up to the level below you')
+            return
+        if tgt_auth == level:
+            await ctx.send(f'{tgt_name} already has auth level {auth_name}')
+            return
+        async with self.config as config:
+            orig_auth = Auth.level_to_name(tgt_auth)
+            if orig_auth in config['auth']:
+                del config['auth'][orig_auth][str(tgt_id)]
+            if auth_name != 'noauth':
+                config['auth'].get_or(auth_name, {})[str(tgt_id)] = tgt_name
+        await ctx.send('updated auth')
