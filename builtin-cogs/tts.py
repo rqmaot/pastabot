@@ -34,8 +34,12 @@ def generate(speech, msgid, lang='en', tld='co.uk', voices=None):
                 return gen_with_args(False, True)
             elif use_tld: 
                 return gen_with_args(False, False)
-            else: 
-                raise ValueError(f'Cannot generate speech with tld={tld}, lang={lang}')
+            else:
+                try: 
+                    gTTS('nonempty', lang='en', tld='co.uk').save(f'tts/{msgid}/{msgid}.mp3')
+                    return None, None
+                except:
+                    raise ValueError(f'Cannot generate speech for "{speech}" with tld={tld}, lang={lang}')
     if tld != 'piper': return gen_with_args(True, True)
     if voices is None: raise ValueError('No voices provided for piper')
     if lang not in voices:
@@ -73,6 +77,7 @@ class TTS(commands.Cog):
         self.app = app
         self.voices = {}
     async def speak(self, ctx, filename, filedir):
+        if filename is None or filedir is None: return
         try:
             vc = await self.app.connect_to_vc(ctx)
             async with self.app.musicq.lock:
@@ -84,6 +89,9 @@ class TTS(commands.Cog):
             config.get_or('tts', {}).get_or(str(user_id), {})[str(ctx.channel.id)] = {'tld': tld, 'lang': lang}
     async def remove_tts(self, ctx, user_id):
         async with self.app.config as config:
+            if 'tts' not in config: return
+            if str(user_id) not in config['tts']: return
+            if str(ctx.channel.id) not in config['tts'][str(user_id)]: return
             del config['tts'][str(user_id)][str(ctx.channel.id)]
     @command(help='Activate TTS. For yourself, use !tts [tld (e.g. us or co.uk)] [lang (e.g. en)]. Default is co.uk en', auth=Auth.TRUSTED)
     async def tts(self, ctx, user_id=None, tld=None, lang=None):
@@ -129,8 +137,8 @@ Nigeria - com.ng""")
         if content.strip() == '': return
         try:
             filename, filedir = generate(content, str(msg.id), entry['lang'], entry['tld'], self.voices)
+            await self.speak(ctx, filename, filedir)
         except Exception as e:
             await ctx.send(f'tts.generate: {e}')
             return
-        await self.speak(ctx, filename, filedir)
 
