@@ -1,6 +1,7 @@
 import datetime
 import discord
 from discord.ext import commands, tasks
+import httpx
 import requests
 import time
 
@@ -19,20 +20,31 @@ class GameInfo:
         return f"{self.name} is not on sale (${self.initial/100})"
     def __repr__(self):
         return f"GameInfo {{name={self.name}, initial={self.initial}, final={self.final}}}"
-
-def get_game_info(app_id):
-    url = "https://store.steampowered.com/api/appdetails"
-    params = {"appids": app_id, "cc": "us"}
-    res = requests.get(url, params=params)
-    if res.status_code != 200: raise ValueError(f"Could not fetch game {app_id}")
-    data = res.json()[str(app_id)]["data"]
-    try:
-        return GameInfo(
+    @staticmethod
+    def from_response(res):
+        if res.status_code != 200: raise ValueError(f"Could not fetch game {app_id}")
+        data = res.json()[str(app_id)]["data"]
+        try:
+            return GameInfo(
                 data["name"], 
                 data["price_overview"]["initial"], 
                 data["price_overview"]["final"]
-        )
-    except Exception as e: raise ValueError(f"Couldn't get data for {app_id}: {e}")
+            )
+        except Exception as e:
+            raise ValueError(f"Couldn't get data for {app_id}: {e}")
+    STEAM_URL = "https://store.steampowered.com/api/appdetails"
+    @staticmethod
+    def params(app_id):
+        return {"appids": app_id, "cc": "us"}
+    @staticmethod
+    def fetch(app_id):
+        res = requests.get(GameInfo.STEAM_URL, params=GameInfo.params(app_id))
+        return GameInfo.from_response(res)
+    @staticmethod
+    async def fetch_async(app_id):
+        async with httpx.AsyncClient() as client:
+            res = await client.get(GameInfo.STEAM_URL, GameInfo.params(app_id))
+        return GameInfo.from_response(res)
 
 class Steam(commands.Cog):
     def __init__(self, app):
@@ -47,7 +59,7 @@ class Steam(commands.Cog):
                 del config['steam'][user_id][app_id]
                 return
             try:
-                info = get_game_info(int(app_id))
+                info = await GameInfo.fetch_async(int(app_id))
                 config['steam'][user_id][app_id] = {
                     'name': info.name,
                     'prev': info.final,
@@ -66,7 +78,7 @@ class Steam(commands.Cog):
                 sales = {}
                 for app_id in config["steam"][user_id]:
                     try:
-                        info = get_game_info(int(app_id))
+                        info = await GameInfo.fetch_async(int(app_id))
                         if int(info.final) < int(config["steam"][user_id][app_id]["prev"]):
                             notif_channel = int(config["steam"][user_id][app_id]["channel"])
                             if notif_channel in sales: sales[notif_channel].append(info)

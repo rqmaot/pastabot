@@ -35,3 +35,10 @@ class Basics(commands.Cog):
     @command(help='Replies with your ID')
     async def whoami(self, ctx):
         await ctx.send(ctx.author.id)
+    @command(help='Raises an exception. Used to test the command decorator error handling')
+    async def throw(self, ctx, *msg):
+        raise Exception(' '.join(msg))
+    @command(auth=Auth.MODERATOR, help='Prints to the console. Used to test stdout logging')
+    async def console(self, ctx, *msg):
+        print(' '.join(msg), flush=True)
+    

@@ -15,8 +15,7 @@ class Auth:
                   'trusted': Auth.TRUSTED,
                   'moderator': Auth.MODERATOR,
                   'admin': Auth.ADMIN}
-        if name is None: return themap
-        return themap[name]
+        return themap if name is None else themap[name]
     @cache
     @staticmethod
     def level_to_name(level=None):
@@ -25,15 +24,14 @@ class Auth:
                   Auth.TRUSTED: 'trusted',
                   Auth.MODERATOR: 'moderator',
                   Auth.ADMIN: 'admin'}
-        if level is None: return themap
-        return themap[level]
+        return themap if level is None else themap[level]
     def __init__(self, config):
         self.config = config
     def check(self, discord_id):
         # verify that config contains auth info
         if 'auth' not in self.config:
-            print(f"no auth")
-            return self.BLACKLIST
+            print('no auth in config')
+            return self.NOAUTH
         # check all the permissions
         for name in Auth.name_to_level():
             if name not in self.config['auth']: continue
@@ -67,8 +65,9 @@ class Auth:
             return
         async with self.config as config:
             orig_auth = Auth.level_to_name(tgt_auth)
-            if orig_auth in config['auth']:
+            if str(tgt_id) in config.get_or('auth', {}).get_or(orig_auth, {}):
                 del config['auth'][orig_auth][str(tgt_id)]
+            if orig_auth == 'noauth': del config['auth']['noauth']
             if auth_name != 'noauth':
                 config['auth'].get_or(auth_name, {})[str(tgt_id)] = tgt_name
         await ctx.send('updated auth')

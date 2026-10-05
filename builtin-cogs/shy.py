@@ -66,7 +66,7 @@ class Shy(commands.Cog):
         async with self.app.config as config:
             config['shy'][str(ctx.author.id)].append(str(user_id))
         await self.maybe_deafen_vc(ctx.channel)
-    @command(help='No longer allow a user to be undeafened when you are unmuted')
+    @command(help='No longer allow a user to be undeafened when you are unmuted', auth=Auth.TRUSTED)
     async def disallow(self, ctx, user_id):
         async with self.app.config as config:
             config.get_or('shy', {}).get_or(str(ctx.author.id), []).remove(user_id)

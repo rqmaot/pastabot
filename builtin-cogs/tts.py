@@ -1,3 +1,4 @@
+import asyncio
 from discord.ext import commands
 from gtts import gTTS
 import os
@@ -9,12 +10,91 @@ import wave
 
 from app import Auth, command
 
+def timeit(f, *args, **kwargs):
+    t0 = time.time()
+    x = f(*args, **kwargs)
+    t1 = time.time()
+    return x, t1 - t0
+
 def file_exists(path):
     try: os.rename(path, path)
     except: return False
     return True
 
-def generate(speech, msgid, lang='en', tld='co.uk', voices=None):
+async def log_and_send(msg, ctx=None):
+    print(msg)
+    if ctx is not None: await ctx.send(msg)
+
+# an LRU cache associating Piper TTS voice names to loaded voices
+class PiperCache:
+    class Node:
+        def __init__(self, name, voice, nxt):
+            self.name = name
+            self.voice = voice
+            self.prev = None
+            self.nxt = nxt
+    def __init__(self, cap=5):
+        cap = max(cap, 0)
+        self.cap = cap
+        self.head = None
+        self.tail = None
+        self.map = {}
+    def unlink(self, name, from_map=True):
+        node = self.map[name]
+        if node.prev: node.prev.nxt = node.nxt
+        else: self.head = node.nxt
+        if node.nxt: node.nxt.prev = node.prev
+        else: self.tail = node.prev
+        if from_map: del self.map[name]
+        node.prev = None
+        node.nxt = None
+        return node
+    def insert(self, name, voice):
+        try:
+            self.map[name].voice = voice
+            self.touch(name)
+            return
+        except: pass
+        if self.cap > 0 and len(self) >= self.cap: self.unlink(self.tail.name)
+        node = PiperCache.Node(name, voice, self.head)
+        self.head = node
+        if node.nxt is None: self.tail = node
+        self.map[name] = node
+    def touch(self, name):
+        node = self.unlink(name, from_map=False)
+        node.nxt = self.head
+        self.head = node
+        if node.nxt is None: self.tail = node
+    def __getitem__(self, name):
+        self.touch(name)
+        return self.map[name].voice
+    def __setitem__(self, name, voice):
+        self.insert(name, voice)
+    def __len__(self):
+        return len(self.map)
+    def __delitem__(self, name):
+        self.unlink(name)
+    def __contains__(self, name):
+        return name in self.map
+    async def load(self, voice, ctx=None):
+        if voice not in self:
+            os.makedirs('piper', exist_ok=True)
+            path = os.path.join('piper', f'{voice}.onxx')
+            log_loading = True
+            if not file_exists(path):
+                log_loading = False
+                await log_and_send(f'Downloading Piper voice {voice}...', ctx)
+                _, t = timeit(subprocess.run, ['python3', '-m', 'piper.donwload_voices',
+                                               '--download-dir', 'piper', voice])
+                if not file_exists(path):
+                    raise ValueError(f'Failed to download Piper voice {voice} (took {t:.2f}s)')
+                await log_and_send(f'Downloading Piper voice {voice} took {t:.2f}s. Loading it...', ctx)
+            if log_loading: await log_and_send(f'Loading piper voice {voice}...', ctx)
+            cache[voice], t = timeit(PiperVoice.load, path)
+            await log_and_send(f'Loading piper voice {voice} took {t:.2f}s', ctx)
+        return self[voice]
+
+async def generate(speech, msgid, lang='en', tld='co.uk', voices=None, ctx=None):
     os.makedirs(f'tts/{msgid}', exist_ok=True)
     def gen_with_args(use_lang, use_tld):
         try:
@@ -41,27 +121,11 @@ def generate(speech, msgid, lang='en', tld='co.uk', voices=None):
                 except:
                     raise ValueError(f'Cannot generate speech for "{speech}" with tld={tld}, lang={lang}')
     if tld != 'piper': return gen_with_args(True, True)
-    if voices is None: raise ValueError('No voices provided for piper')
-    if lang not in voices:
-        os.makedirs('piper', exist_ok=True)
-        path = os.path.join('piper', f'{lang}.onnx')
-        if not file_exists(path):
-            print(f'Downloading piper voice {lang}')
-            subprocess.run(['python3', '-m', 'piper.download_voices',
-                            '--download_dir', 'piper', lang])
-        if not file_exists(path):
-            raise ValueError(f'Failed to download piper voice {lang}')
-        print(f'Loading piper voice {lang}')
-        voice = PiperVoice.load(path)
-        voices[lang] = voice
-    else: voice = voices[lang]
-    try:
-        with wave.open(f'tts/{msgid}/{msgid}.wav', 'wb') as wav_file:
-            voice.synthesize_wav(speech, wav_file)
-        return (f'{msgid}.wav', f'tts/{msgid}')
-    except Exception as e:
-        print(f'tts.generate: {e}')
-        return None
+    if voices is None: raise ValueError("Can't generate Piper voice without Piper voice cache")
+    voice = await voices.load(lang, ctx)
+    with wave.open(f'tts/{msgid}/{msgid}.wav', 'wb') as wav_file:
+        voice.synthesize_wav(speech, wav_file)
+    return (f'{msgid}.wav', f'tts/{msgid}')
 
 def clean_msg(msg):
     ignore = ["!", "http", ":", "<"]
@@ -75,7 +139,7 @@ def clean_msg(msg):
 class TTS(commands.Cog):
     def __init__(self, app):
         self.app = app
-        self.voices = {}
+        self.voices = PiperCache()
     async def speak(self, ctx, filename, filedir):
         if filename is None or filedir is None: return
         try:
@@ -119,6 +183,12 @@ India - co.in
 Ireland ie
 South Africa - co.za
 Nigeria - com.ng""")
+    @command(help='Check if you have TTS on in this channel')
+    async def checktts(self, ctx):
+        try:
+            entry = self.app.config['tts'][str(ctx.author.id)][str(ctx.channel.id)].json
+            await ctx.send(f'You have TTS on: {entry}')
+        except: await ctx.send('You do not have TTS on in this channel')
     @command(help='Show info on using Piper TTS')
     async def piper(self, ctx):
         msg = '''To use a piper voice, use `!tts piper [voice code]`.
@@ -128,17 +198,31 @@ Nigeria - com.ng""")
     @commands.Cog.listener()
     async def on_message(self, msg):
         ctx = await self.app.bot.get_context(msg)
-        if 'tts' not in self.app.config: return
-        if str(ctx.author.id) not in self.app.config['tts']: return
-        if str(ctx.channel.id) not in self.app.config['tts'][str(ctx.author.id)]: return
-        entry = self.app.config['tts'][str(ctx.author.id)][str(ctx.channel.id)].json
+        try: entry = self.app.config['tts'][str(ctx.author.id)][str(ctx.channel.id)].json
+        except: return
         if msg.content.startswith("!"): return
         content = clean_msg(msg.content.replace('(', ' ').replace(')', ' ').replace('https', ' https'))
         if content.strip() == '': return
-        try:
-            filename, filedir = generate(content, str(msg.id), entry['lang'], entry['tld'], self.voices)
-            await self.speak(ctx, filename, filedir)
-        except Exception as e:
-            await ctx.send(f'tts.generate: {e}')
-            return
-
+        filename, filedir = await generate(content, str(msg.id), entry['lang'], entry['tld'], self.voices, ctx)
+        await self.speak(ctx, filename, filedir)
+        async with self.app.config as config:
+            config['tts'][str(ctx.author.id)][str(ctx.channel.id)]['time'] = str(int(time.time()))
+    @commands.Cog.listener()
+    async def on_ready(self):
+        try: tts = self.app.config['tts']
+        except: return
+        to_load = {}
+        for user in tts:
+            entries = tts[user]
+            for channel in entries:
+                entry = entries[channel]
+                if entry['tld'] != 'piper': continue
+                if 'time' not in entry: continue
+                voice = entry['lang']
+                t = int(entry['time'])
+                if voice in to_load: to_load[voice] = max(to_load[voice], t)
+                else: to_load[voice] = t
+        to_load_sorted = sorted(list(to_load), key=lambda voice: to_load[voice], reverse=True)
+        if self.voices.cap > 0: to_load_sorted = to_load_sorted[:self.voices.cap]
+        for voice in to_load_sorted:
+            self.voices[voice] = await self.voices.load(voice)
