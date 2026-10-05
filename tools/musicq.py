@@ -80,7 +80,7 @@ class Queue:
     def _after_impl(self, track, vc):
         self.dequeue(track)
         if self.all_empty(): 
-            if vc.is_playing: vc.stop()
+            if vc.is_playing(): vc.stop()
             self.active.clear()
             self.mixer = None
         if self.is_empty(track): self.set_not_playing(track)

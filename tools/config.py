@@ -10,8 +10,11 @@ class Config:
         self.is_async = is_async if parent is None else parent.is_async
         self.mutex = asyncio.Lock() if self.is_async else threading.Lock()
         if path is not None:
-            with open(path, 'r') as f:
-                self.json = mod_json.loads(f.read())
+            try:
+                with open(path, 'r') as f:
+                    self.json = mod_json.loads(f.read())
+            except FileNotFoundError:
+                self.json = {}
     @staticmethod
     def is_json(val):
         if True in map(lambda t: isinstance(val, t),

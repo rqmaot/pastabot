@@ -33,22 +33,15 @@ class Sounds(commands.Cog):
     @command(help='Play a sound by its name/path')
     async def sound(self, ctx, *sound):
         sound = ' '.join(sound).strip()
-        try: vc = await self.app.connect_to_vc(ctx)
-        except:
-            await ctx.send('could not connect to voice')
+        vc = await self.app.connect_to_vc(ctx)
+        file = self.get_sound(sound)
+        if file is None:
+            await ctx.send('no such sound')
             return
-        try:
-            file = self.get_sound(sound)
-            if file is None:
-                await ctx.send('no such sound')
-                return
-            self.app.musicq.add(file, vc=vc)
-        except Exception as e:
-            await ctx.send(f'sounds.sound: {e}')
+        self.app.musicq.add(file, vc=vc)
     @command(help='Connect the bot to the VC you\'re in')
     async def join(self, ctx):
-        try: await self.app.connect_to_vc(ctx)
-        except: await ctx.send(f'sounds.join: {e}')
+        await self.app.connect_to_vc(ctx)
     @command(help='Disconnect the bot from VC')
     async def leave(self, ctx):
         await ctx.voice_client.disconnect()

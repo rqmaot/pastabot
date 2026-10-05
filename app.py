@@ -17,6 +17,7 @@ from tools import musicq
 class App:
     # basic infrastructure methods
     def __init__(self, *cog_dirs, enable_ip=True):
+        self.enable_ip = enable_ip
         self.config = Config('config.json', is_async=True)
         self.auth = Auth(self.config)
         self.musicq = musicq.Queue()
