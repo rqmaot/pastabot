@@ -7,4 +7,4 @@ piper/
 watch.txt
 PLAYER_STORAGE.json
 shell.nix
-custom-cogs/*
+custom-cogs/
