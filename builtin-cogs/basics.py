@@ -32,6 +32,13 @@ class Basics(commands.Cog):
     async def find(self, ctx, discord_id):
         user = await self.app.bot.fetch_user(int(discord_id))
         await ctx.send(str(user))
+    @command(help='Replies with the avatar associated with the given ID')
+    async def avatar(self, ctx, discord_id):
+        user = await self.app.bot.fetch_user(int(discord_id))
+        url = user.display_avatar.url
+        embed = discord.Embed(title=f'avatar: {user.name}')
+        embed.set_image(url=url)
+        await ctx.send(embed=embed)
     @command(help='Replies with your ID')
     async def whoami(self, ctx):
         await ctx.send(ctx.author.id)
